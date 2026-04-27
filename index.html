@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tabungan App</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #5c0707;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 350px;
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 48%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin: 5px 1%;
+      cursor: pointer;
+      color: white;
+    }
+
+    .btn-tabung { background: #2ecc71; }
+    .btn-tarik { background: #e74c3c; }
+    .btn-saldo { background: #3498db; width: 100%; }
+    .btn-hapus {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.btn-hapus:hover {
+  background: #c0392b;
+  transform: scale(1.15);
+}
+
+    .saldo-box {
+      background: #3498db;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      margin: 15px 0;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    .masuk { color: green; }
+    .keluar { color: red; }
+  </style>
+</head>
+
+<body>
+
+<div id="app" class="app">
+  <h2>Tabungan GEN-WARIS</h2>
+
+  <input v-model="user_id" placeholder="User ID">
+  <input v-model="jumlah" placeholder="Jumlah">
+
+  <div>
+    <button type="button" class="btn-tabung" @click="tabung">Tabung</button>
+    <button type="button" class="btn-tarik" @click="tarik">Tarik</button>
+  </div>
+
+  <div class="saldo-box">
+    Saldo: Rp {{ saldo }}
+  </div>
+
+  <h3>Riwayat</h3>
+
+  <table>
+    <tr>
+      <th>Tipe</th>
+      <th>Jumlah</th>
+      <th>Tanggal</th>
+      <th>Aksi</th>
+    </tr>
+    <tr v-for="item in riwayat" :key="item.id">
+  <td :class="item.tipe">{{ item.tipe }}</td>
+  <td>{{ item.jumlah }}</td>
+  <td>{{ formatTanggal(item.created_at) }}</td>
+  <td>
+    <button class="btn-hapus" @click="hapus(item.id)">🗑️</button>
+  </td>
+ </tr>
+  </table>
+</div>
+
+<script>
+
+const API = "https://tabungan-api.fairuzim934.workers.dev"
+
+Vue.createApp({
+  data() {
+    return {
+      user_id: "",
+      jumlah: "",
+      saldo: 0,
+      riwayat: []
+    }
+  },
+  methods: {
+    async tabung() {
+  const res = await fetch(API + "/tabung", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: this.user_id,
+      jumlah: this.jumlah
+    })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert("Gagal: " + data.error)
+  } else {
+    alert("Berhasil menabung")
+    this.cekSaldo()
+    this.getRiwayat()
+  }
+},
+    async tarik() {
+  const res = await fetch(API + "/tarik", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: this.user_id,
+      jumlah: this.jumlah
+    })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert("Gagal: " + data.error)
+  } else {
+    alert("Berhasil tarik")
+    this.cekSaldo()
+    this.getRiwayat()
+  }
+},
+    async cekSaldo() {
+      const res = await fetch(API + "/saldo/" + this.user_id)
+      const data = await res.json()
+      this.saldo = data.saldo
+    },
+    async getRiwayat() {
+      const res = await fetch(API + "/riwayat/" + this.user_id)
+      this.riwayat = await res.json()
+    },
+    async hapus(id) {
+  try {
+    const res = await fetch(API + "/transaksi/" + id, {
+      method: "DELETE"
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert("Gagal hapus: " + data.error)
+    } else {
+      alert("Berhasil dihapus")
+      this.getRiwayat()
+      this.cekSaldo()
+    }
+
+  } catch (err) {
+    alert("ERROR: " + err.message)
+  }
+},
+
+formatTanggal(tanggal) {
+  const d = new Date(tanggal)
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  })
+}
+
+  }
+}).mount("#app")
+</script>
+
+</body>
+</html>
