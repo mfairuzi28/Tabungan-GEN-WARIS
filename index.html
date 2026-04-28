@@ -6,31 +6,37 @@
 
   <style>
     body {
-      font-family: Arial;
-      background: #5c0707;
+       font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
       display: flex;
-      justify-content: center;
-      padding: 20px;
+      justify-content: center; /* Tengah horizontal */
+      align-items: center;     /* Tengah vertikal */
+      min-height: 100vh;       /* Tinggi layar penuh */
+      background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("WhatsApp Image 2026-04-28 at 20.17.52.jpeg");
+      background-size: 25% 25%;
+      background-position: center;
+      background-attachment: fixed;
     }
 
     .app {
-      width: 350px;
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      width: 360px;
+      /* 3. Efek Kaca Transparan agar teks tetap jelas */
+      background: rgba(255, 255, 255, 0.9); 
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
 
-    h2 {
-      text-align: center;
-    }
+    h2 { text-align: center; color: #2c3e50; margin-top: 0; }
 
     input {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
+      box-sizing: border-box; /* Agar padding tidak merusak lebar */
     }
 
     button {
