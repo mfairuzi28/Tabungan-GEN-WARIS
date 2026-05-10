@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+  <!--test deploy-->
+  <!--update paksa-->
+<head>
+  <title>Tabungan App</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+       font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      justify-content: center; /* Tengah horizontal */
+      align-items: center;     /* Tengah vertikal */
+      min-height: 100vh;       /* Tinggi layar penuh */
+      background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("WhatsApp Image 2026-04-28 at 20.17.52.jpeg");
+      background-size: 25% 25%;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .app {
+      width: 360px;
+      /* Efek Kaca Transparan agar teks tetap jelas */
+      background: rgba(255, 255, 255, 0.6); 
+      backdrop-filter: blur(0px);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    h2 { text-align: center; color: #2c3e50; margin-top: 0; }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      box-sizing: border-box; /* Agar padding tidak merusak lebar */
+    }
+
+    button {
+      width: 48%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin: 5px 1%;
+      cursor: pointer;
+      color: white;
+    }
+
+    .btn-tabung { background: #2ecc71; }
+    .btn-tarik { background: #ff7b00; }
+    .btn-saldo { background: #0b4870; width: 100%; }
+    .btn-hapus {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.btn-hapus:hover {
+  background: #c0392b;
+  transform: scale(1.15);
+}
+
+    .saldo-box {
+      background: #3498db;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      margin: 15px 0;
+      font-size: 18px;
+    }
+
+    table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: #445372;
+  color: white;
+}
+
+td {
+  background: #ffffff;
+}
+
+    .masuk { color: green; }
+    .keluar { color: rgb(206, 125, 20); }
+
+    .user-box {
+  background: #f1f9ff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.input-user {
+  background: linear-gradient(135deg, #74ebd5, #9face6);
+  border: none;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.input-user::placeholder {
+  color: #2c3e50;
+  opacity: 0.7;
+}
+
+.btn-user {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00c853, #69f0ae);
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-user:hover {
+  transform: scale(1.05);
+}
+
+.btn-update {
+  background: #f3e629;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-update:hover {
+  background: #caeb53;
+  transform: scale(1.1);
+}
+
+.btn-hapus-user {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-hapus-user:hover {
+  background: #c0392b;
+  transform: scale(1.1);
+}
+
+.btn-edit {
+  background: #a16e5e;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 6px 10px;
+  transition: 0.2s;
+}
+
+.btn-edit:hover {
+  background: #d4ac0d;
+  transform: scale(1.1);
+}
+
+.btn-simpan {
+  background:  #f1c40f;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-left: 5px;
+  transition: 0.2s;
+}
+
+.btn-simpan:hover {
+  background: #27ae60;
+  transform: scale(1.1);
+}
+  </style>
+</head>
+
+<body>
+
+<div id="app" class="dashboard">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h3>Menu</h3>
+    <button @click="page='dashboard'">Dashboard</button>
+    <button @click="page='user'">User</button>
+    <button @click="page='transaksi'">Tabungan</button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div v-if="page==='dashboard'">
+      <h1>Dashboard Baru</h1>
+      <h2>Dashboard</h2>
+
+      <div class="card">
+        <p>Saldo Masuk: Rp {{ totalMasuk }}</p>
+        <p>Saldo Keluar: Rp {{ totalKeluar }}</p>
+        <p>Total Saldo: Rp {{ saldo }}</p>
+      </div>
+    </div>
+
+    <!-- USER -->
+    <div v-if="page==='user'">
+      <h2>Manajemen User</h2>
+
+      <input v-model="namaBaru" placeholder="Nama user">
+      <button @click="tambahUser">Tambah</button>
+
+      <ul>
+        <li v-for="u in users">
+          <input v-model="u.nama">
+          <button @click="updateUser(u)">💾</button>
+          <button @click="hapusUser(u.id)">🗑️</button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- TABUNGAN -->
+    <div v-if="page==='transaksi'">
+      <h2>Transaksi</h2>
+
+      <select v-model="user_id">
+        <option v-for="u in users" :value="u.id">
+          {{ u.nama }}
+        </option>
+      </select>
+
+      <input v-model="jumlah" placeholder="Jumlah">
+      <input v-model="keterangan" placeholder="Keterangan">
+
+      <button @click="tabung">Tabung</button>
+      <button @click="tarik">Tarik</button>
+
+      <table>
+        <tr>
+          <th>Tipe</th>
+          <th>Jumlah</th>
+          <th>Keterangan</th>
+          <th>Tanggal</th>
+        </tr>
+
+        <tr v-for="r in riwayat">
+          <td>{{ r.tipe }}</td>
+          <td>{{ r.jumlah }}</td>
+          <td>{{ r.keterangan }}</td>
+          <td>{{ formatTanggal(r.created_at) }}</td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+<script>
+
+const API = "https://tabungan-api.fairuzim934.workers.dev"
+
+Vue.createApp({
+  data() {
+    return {
+      user_id: "",
+      jumlah: "",
+      saldo: 0,
+      riwayat: [],
+      users: [],
+      namaBaru: "",
+      editId: null,
+      editJumlah: "",
+      page: "dashboard",
+      keterangan: "",
+      totalMasuk: 0,
+      totalKeluar: 0,
+      keterangan: ""
+    }
+  },
+  methods: {
+    async tabung() {
+  const res = await fetch(API + "/tabung", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: this.user_id,
+      jumlah: this.jumlah,
+      keterangan: this.keterangan
+    })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert("Gagal: " + data.error)
+  } else {
+    alert("Berhasil menabung")
+    this.cekSaldo()
+    this.getRiwayat()
+  }
+},
+    async tarik() {
+  const res = await fetch(API + "/tarik", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: this.user_id,
+      jumlah: this.jumlah,
+      keterangan: thisketerangan
+    })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert("Gagal: " + data.error)
+  } else {
+    alert("Berhasil tarik")
+    this.cekSaldo()
+    this.getRiwayat()
+  }
+},
+    async cekSaldo() {
+      const res = await fetch(API + "/saldo/" + this.user_id)
+      const data = await res.json()
+      this.saldo = data.saldo
+    },
+    async getRiwayat() {
+      const res = await fetch(API + "/riwayat/" + this.user_id)
+      this.riwayat = await res.json()
+      this.totalMasuk = 0
+this.totalKeluar = 0
+
+this.riwayat.forEach(r => {
+  if (r.tipe === "masuk") {
+    this.totalMasuk += Number(r.jumlah)
+  } else {
+    this.totalKeluar += Number(r.jumlah)
+  }
+})
+
+      this.renderChart() //update grafik
+    },
+    async hapus(id) {
+  try {
+    const res = await fetch(API + "/transaksi/" + id, {
+      method: "DELETE"
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      alert("Gagal hapus: " + data.error)
+    } else {
+      alert("Berhasil dihapus")
+      this.getRiwayat()
+      this.cekSaldo()
+    }
+
+  } catch (err) {
+    alert("ERROR: " + err.message)
+  }
+},
+
+renderChart() {
+  const ctx = document.getElementById('chartSaldo')
+
+  if (!ctx) return
+
+  if (this.chart) {
+    this.chart.destroy()
+  }
+
+  let masuk = 0
+  let keluar = 0
+
+  this.riwayat.forEach(r => {
+    if (r.tipe === "masuk") masuk += Number(r.jumlah)
+    else keluar += Number(r.jumlah)
+  })
+
+  this.chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Masuk', 'Keluar'],
+      datasets: [{
+        label: 'Total',
+        data: [masuk, keluar],
+        backgroundColor: ['green', 'orange']
+      }]
+    }
+  })
+},
+
+async cekTambahUser() {
+  if (this.user_id === "tambah") {
+    const nama = prompt("Masukkan nama user baru:")
+
+    if (!nama) {
+      this.user_id = ""
+      return
+    }
+
+    await fetch(API + "/users", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ nama })
+    })
+
+    await this.getUsers()
+
+    this.user_id = this.users[0]?.id
+  }
+},
+
+async getUsers() {
+  try {
+    const res = await fetch(API + "/users")
+    const data = await res.json()
+    console.log("DATA USERS:", data)
+    this.users = data
+  } catch (err) {
+    console.error("ERROR:", err)
+  }
+},
+
+async tambahUser() {
+  if (!this.namaBaru) return alert("Nama kosong")
+
+  await fetch(API + "/users", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ nama: this.namaBaru })
+  })
+
+  this.namaBaru = ""
+  this.getUsers()
+},
+
+async updateUser(u) {
+  await fetch(API + "/users/" + u.id, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ nama: u.nama })
+  })
+
+  alert("User diupdate")
+},
+
+async hapusUser(id) {
+  if (!confirm("Yakin hapus user?")) return
+
+  await fetch(API + "/users/" + id, {
+    method: "DELETE"
+  })
+
+  this.getUsers()
+},
+
+formatTanggal(tanggal) {
+  const d = new Date(tanggal)
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  })
+},
+
+editTransaksi(item) {
+  this.editId = item.id
+  this.editJumlah = item.jumlah
+},
+
+async simpanEdit(item) {
+  await fetch(API + "/transaksi/" + item.id, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ jumlah: this.editJumlah })
+  })
+
+  this.editId = null
+  this.getRiwayat()
+  this.cekSaldo()
+}
+
+},
+mounted() {
+  console.log("APP JALAN")
+  this.getUsers()
+},
+
+watch: {
+  user_id(val) {
+    if (val && val !== "tambah") {
+      this.cekSaldo()
+      this.getRiwayat()
+    }
+  }
+},
+
+}).mount("#app")
+</script>
+
+</body>
+</html>
