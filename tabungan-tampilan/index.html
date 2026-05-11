@@ -9,231 +9,154 @@
 
   <style>
     body {
-       font-family: 'Segoe UI', Arial, sans-serif;
-      margin: 0;
-      display: flex;
-      justify-content: center; /* Tengah horizontal */
-      align-items: center;     /* Tengah vertikal */
-      min-height: 100vh;       /* Tinggi layar penuh */
-      background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("WhatsApp Image 2026-04-28 at 20.17.52.jpeg");
-      background-size: 25% 25%;
-      background-position: center;
-      background-attachment: fixed;
-    }
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  height: 100vh;
+  background: url("./WhatsApp Image 2026-04-28 at 20.17.52.jpeg") no-repeat center center fixed;
+  background-size: cover;
+}
 
-    .app {
-      width: 360px;
-      /* Efek Kaca Transparan agar teks tetap jelas */
-      background: rgba(255, 255, 255, 0.6); 
-      backdrop-filter: blur(0px);
-      border-radius: 20px;
-      padding: 25px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    }
-
-    h2 { text-align: center; color: #2c3e50; margin-top: 0; }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      box-sizing: border-box; /* Agar padding tidak merusak lebar */
-    }
-
-    button {
-      width: 48%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      margin: 5px 1%;
-      cursor: pointer;
-      color: white;
-    }
-
-    .btn-tabung { background: #2ecc71; }
-    .btn-tarik { background: #ff7b00; }
-    .btn-saldo { background: #0b4870; width: 100%; }
-    .btn-hapus {
-  background: #e74c3c;
-  border: none;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+/* LAYOUT UTAMA */
+.layout {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 240px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sidebar button {
+  width: 100%;
+  margin: 10px 0;
+  padding: 12px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
   transition: 0.2s;
 }
 
-.btn-hapus:hover {
-  background: #c0392b;
-  transform: scale(1.15);
+.sidebar button:hover {
+  background: #1abc9c;
 }
 
-    .saldo-box {
-      background: #3498db;
-      color: white;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-      margin: 15px 0;
-      font-size: 18px;
-    }
+/* MAIN CONTENT */
+.main {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
 
-    table {
+/* CARD CONTAINER (TRANSPARAN GLASS) */
+.main > div {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
+  padding: 25px;
+  border-radius: 15px;
+  color: white;
+}
+
+/* DASHBOARD CARDS */
+.cards {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.card {
+  flex: 1;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 18px;
+  color: white;
+}
+
+.masuk { background: #27ae60; }
+.keluar { background: #e67e22; }
+.saldo { background: #2980b9; }
+
+/* FORM */
+input, select {
   width: 100%;
-  margin-top: 10px;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  padding: 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  margin-top: 15px;
   border-collapse: collapse;
-  font-size: 12px;
-  background: white;
+  background: rgba(255,255,255,0.9);
   border-radius: 10px;
   overflow: hidden;
+  color: black;
 }
 
 th {
-  background: #445372;
+  background: #2c3e50;
   color: white;
 }
 
-td {
-  background: #ffffff;
-}
-
-    .masuk { color: green; }
-    .keluar { color: rgb(206, 125, 20); }
-
-    .user-box {
-  background: #f1f9ff;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
-}
-
-.input-user {
-  background: linear-gradient(135deg, #74ebd5, #9face6);
-  border: none;
-  color: #2c3e50;
-  font-weight: bold;
-}
-
-.input-user::placeholder {
-  color: #2c3e50;
-  opacity: 0.7;
-}
-
-.btn-user {
-  width: 100%;
+td, th {
   padding: 10px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #00c853, #69f0ae);
-  color: white;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-user:hover {
-  transform: scale(1.05);
-}
-
-.btn-update {
-  background: #f3e629;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.btn-update:hover {
-  background: #caeb53;
-  transform: scale(1.1);
-}
-
-.btn-hapus-user {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.btn-hapus-user:hover {
-  background: #c0392b;
-  transform: scale(1.1);
-}
-
-.btn-edit {
-  background: #a16e5e;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 6px;
-  padding: 6px 10px;
-  transition: 0.2s;
-}
-
-.btn-edit:hover {
-  background: #d4ac0d;
-  transform: scale(1.1);
-}
-
-.btn-simpan {
-  background:  #f1c40f;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 6px;
-  padding: 6px 10px;
-  margin-left: 5px;
-  transition: 0.2s;
-}
-
-.btn-simpan:hover {
-  background: #27ae60;
-  transform: scale(1.1);
+  text-align: center;
 }
   </style>
 </head>
 
 <body>
 
-<div id="app" class="dashboard">
+<div id="app" class="layout">
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <h3>Menu</h3>
+    <h2>Tabungan</h2>
     <button @click="page='dashboard'">Dashboard</button>
     <button @click="page='user'">User</button>
-    <button @click="page='transaksi'">Tabungan</button>
+    <button @click="page='transaksi'">Transaksi</button>
   </div>
 
-  <!-- CONTENT -->
-  <div class="content">
+  <!-- MAIN CONTENT -->
+  <div class="main">
 
     <!-- DASHBOARD -->
     <div v-if="page==='dashboard'">
-      <h1>Dashboard Baru</h1>
-      <h2>Dashboard</h2>
+      <h1>Dashboard</h1>
 
-      <div class="card">
-        <p>Saldo Masuk: Rp {{ totalMasuk }}</p>
-        <p>Saldo Keluar: Rp {{ totalKeluar }}</p>
-        <p>Total Saldo: Rp {{ saldo }}</p>
+      <div class="cards">
+        <div class="card masuk">Masuk<br>Rp {{ totalMasuk }}</div>
+        <div class="card keluar">Keluar<br>Rp {{ totalKeluar }}</div>
+        <div class="card saldo">Saldo<br>Rp {{ saldo }}</div>
       </div>
     </div>
 
     <!-- USER -->
     <div v-if="page==='user'">
-      <h2>Manajemen User</h2>
+      <h1>User</h1>
 
       <input v-model="namaBaru" placeholder="Nama user">
       <button @click="tambahUser">Tambah</button>
@@ -247,9 +170,9 @@ td {
       </ul>
     </div>
 
-    <!-- TABUNGAN -->
+    <!-- TRANSAKSI -->
     <div v-if="page==='transaksi'">
-      <h2>Transaksi</h2>
+      <h1>Transaksi</h1>
 
       <select v-model="user_id">
         <option v-for="u in users" :value="u.id">
@@ -264,20 +187,37 @@ td {
       <button @click="tarik">Tarik</button>
 
       <table>
-        <tr>
-          <th>Tipe</th>
-          <th>Jumlah</th>
-          <th>Keterangan</th>
-          <th>Tanggal</th>
-        </tr>
+  <tr>
+    <th>Tipe</th>
+    <th>Jumlah</th>
+    <th>Keterangan</th>
+    <th>Tanggal</th>
+    <th>Aksi</th>
+  </tr>
 
-        <tr v-for="r in riwayat">
-          <td>{{ r.tipe }}</td>
-          <td>{{ r.jumlah }}</td>
-          <td>{{ r.keterangan }}</td>
-          <td>{{ formatTanggal(r.created_at) }}</td>
-        </tr>
-      </table>
+  <tr v-for="r in riwayat">
+    <td>{{ r.tipe }}</td>
+
+    <td v-if="editId !== r.id">{{ r.jumlah }}</td>
+    <td v-else>
+      <input v-model="editJumlah">
+    </td>
+
+    <td v-if="editId !== r.id">{{ r.keterangan }}</td>
+    <td v-else>
+      <input v-model="editKeterangan">
+    </td>
+
+    <td>{{ formatTanggal(r.created_at) }}</td>
+
+    <td>
+      <button @click="hapus(r.id)">🗑️</button>
+
+      <button v-if="editId !== r.id" @click="editTransaksi(r)">✏️</button>
+      <button v-else @click="simpanEdit(r)">💾</button>
+    </td>
+  </tr>
+</table>
     </div>
 
   </div>
@@ -300,6 +240,7 @@ Vue.createApp({
       namaBaru: "",
       editId: null,
       editJumlah: "",
+      editKeterangan: "",
       page: "dashboard",
       keterangan: "",
       totalMasuk: 0,
@@ -336,7 +277,7 @@ Vue.createApp({
     body: JSON.stringify({
       user_id: this.user_id,
       jumlah: this.jumlah,
-      keterangan: thisketerangan
+      keterangan: this.keterangan
     })
   })
 
@@ -501,13 +442,17 @@ formatTanggal(tanggal) {
 editTransaksi(item) {
   this.editId = item.id
   this.editJumlah = item.jumlah
+  this.editKeterangan = item.keterangan
 },
 
 async simpanEdit(item) {
   await fetch(API + "/transaksi/" + item.id, {
     method: "PUT",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ jumlah: this.editJumlah })
+    body: JSON.stringify({
+      jumlah: this.editJumlah,
+      keterangan: this.editKeterangan
+    })
   })
 
   this.editId = null
