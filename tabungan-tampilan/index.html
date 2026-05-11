@@ -57,6 +57,7 @@
   flex: 1;
   padding: 30px;
   overflow-y: auto;
+  background: transparent;
 }
 
 /* CARD CONTAINER (TRANSPARAN GLASS) */
@@ -174,11 +175,12 @@ td, th {
     <div v-if="page==='transaksi'">
       <h1>Transaksi</h1>
 
-      <select v-model="user_id">
-        <option v-for="u in users" :value="u.id">
-          {{ u.nama }}
-        </option>
-      </select>
+      <select v-model="nama">
+  <option disabled value="">-- Pilih User --</option>
+  <option v-for="u in users" :key="u.id" :value="String(u.id)">
+    {{ u.nama }}
+  </option>
+</select>
 
       <input v-model="jumlah" placeholder="Jumlah">
       <input v-model="keterangan" placeholder="Keterangan">
@@ -195,7 +197,7 @@ td, th {
     <th>Aksi</th>
   </tr>
 
-  <tr v-for="r in riwayat">
+  <tr v-for="r in riwayat" :key="r.id">
     <td>{{ r.tipe }}</td>
 
     <td v-if="editId !== r.id">{{ r.jumlah }}</td>
@@ -226,13 +228,12 @@ td, th {
 </div>
 
 <script>
-
 const API = "https://tabungan-api.fairuzim934.workers.dev"
 
 Vue.createApp({
   data() {
     return {
-      user_id: "",
+      nama: "",
       jumlah: "",
       saldo: 0,
       riwayat: [],
@@ -244,236 +245,206 @@ Vue.createApp({
       page: "dashboard",
       keterangan: "",
       totalMasuk: 0,
-      totalKeluar: 0,
-      keterangan: ""
+      totalKeluar: 0
     }
   },
+
   methods: {
+
     async tabung() {
+  if (!this.nama) return alert("Pilih user dulu!")
+  if (!this.jumlah) return alert("Isi jumlah dulu!")
+
   const res = await fetch(API + "/tabung", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      user_id: this.user_id,
+      nama: this.nama,
       jumlah: this.jumlah,
       keterangan: this.keterangan
     })
   })
 
-  const data = await res.json()
+  let data
+try {
+  data = await res.json()
+} catch {
+  return alert("Server error (response bukan JSON)")
+}
 
   if (!res.ok) {
-    alert("Gagal: " + data.error)
+    alert(data.error)
   } else {
-    alert("Berhasil menabung")
-    this.cekSaldo()
+    alert("Berhasil")
     this.getRiwayat()
+    this.cekSaldo()
   }
 },
+
     async tarik() {
+  if (!this.nama) return alert("Pilih user dulu!")
+  if (!this.jumlah) return alert("Isi jumlah dulu!")
+
   const res = await fetch(API + "/tarik", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      user_id: this.user_id,
+      nama: this.nama,
       jumlah: this.jumlah,
       keterangan: this.keterangan
     })
   })
 
-  const data = await res.json()
+  let data
+try {
+  data = await res.json()
+} catch {
+  return alert("Server error (response bukan JSON)")
+}
 
   if (!res.ok) {
-    alert("Gagal: " + data.error)
+    alert(data.error)
   } else {
-    alert("Berhasil tarik")
-    this.cekSaldo()
+    alert("Berhasil")
     this.getRiwayat()
+    this.cekSaldo()
   }
 },
+
     async cekSaldo() {
-      const res = await fetch(API + "/saldo/" + this.user_id)
+      const res = await fetch(API + "/saldo/" + this.nama)
       const data = await res.json()
       this.saldo = data.saldo
     },
+
     async getRiwayat() {
-      const res = await fetch(API + "/riwayat/" + this.user_id)
+      const res = await fetch(API + "/riwayat/" + this.nama)
       this.riwayat = await res.json()
+
       this.totalMasuk = 0
-this.totalKeluar = 0
+      this.totalKeluar = 0
 
-this.riwayat.forEach(r => {
-  if (r.tipe === "masuk") {
-    this.totalMasuk += Number(r.jumlah)
-  } else {
-    this.totalKeluar += Number(r.jumlah)
-  }
-})
-
-      this.renderChart() //update grafik
+      this.riwayat.forEach(r => {
+        if (r.tipe === "masuk") this.totalMasuk += Number(r.jumlah)
+        else this.totalKeluar += Number(r.jumlah)
+      })
     },
+
     async hapus(id) {
-  try {
-    const res = await fetch(API + "/transaksi/" + id, {
-      method: "DELETE"
-    })
+      const res = await fetch(API + "/transaksi/" + id, {
+        method: "DELETE"
+      })
 
-    const data = await res.json()
+      let data
+      try {
+        data = await res.json()
+      } catch {
+        return alert("Server error")
+      }
 
-    if (!res.ok) {
-      alert("Gagal hapus: " + data.error)
-    } else {
-      alert("Berhasil dihapus")
+      if (!res.ok) {
+        alert("Gagal hapus")
+      } else {
+        alert("Berhasil dihapus")
+        this.getRiwayat()
+        this.cekSaldo()
+      }
+    },
+
+    async simpanEdit(item) {
+      if (!this.editJumlah) return alert("Jumlah tidak boleh kosong")
+
+      const res = await fetch(API + "/transaksi/" + item.id, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          jumlah: this.editJumlah,
+          keterangan: this.editKeterangan
+        })
+      })
+
+      let data
+      try {
+        data = await res.json()
+      } catch {
+        return alert("Server error")
+      }
+
+      if (!res.ok) {
+        alert("Gagal update")
+      } else {
+        alert("Berhasil update")
+      }
+
+      this.editId = null
+      this.editJumlah = ""
+      this.editKeterangan = ""
+
       this.getRiwayat()
       this.cekSaldo()
+    },
+
+    editTransaksi(item) {
+      this.editId = item.id
+      this.editJumlah = item.jumlah
+      this.editKeterangan = item.keterangan || ""
+    },
+
+    async getUsers() {
+      const res = await fetch(API + "/users")
+      this.users = await res.json()
+    },
+
+    async tambahUser() {
+      if (!this.namaBaru) return alert("Nama kosong")
+
+      await fetch(API + "/users", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ nama: this.namaBaru })
+      })
+
+      this.namaBaru = ""
+      this.getUsers()
+    },
+
+    async updateUser(u) {
+      await fetch(API + "/users/" + u.id, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ nama: u.nama })
+      })
+      alert("User diupdate")
+    },
+
+    async hapusUser(id) {
+      if (!confirm("Yakin hapus user?")) return
+
+      await fetch(API + "/users/" + id, {
+        method: "DELETE"
+      })
+
+      this.getUsers()
+    },
+
+    formatTanggal(tanggal) {
+      const d = new Date(tanggal)
+      return d.toLocaleString("id-ID")
     }
+  },
 
-  } catch (err) {
-    alert("ERROR: " + err.message)
-  }
-},
+  mounted() {
+    this.getUsers()
+  },
 
-renderChart() {
-  const ctx = document.getElementById('chartSaldo')
-
-  if (!ctx) return
-
-  if (this.chart) {
-    this.chart.destroy()
-  }
-
-  let masuk = 0
-  let keluar = 0
-
-  this.riwayat.forEach(r => {
-    if (r.tipe === "masuk") masuk += Number(r.jumlah)
-    else keluar += Number(r.jumlah)
-  })
-
-  this.chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Masuk', 'Keluar'],
-      datasets: [{
-        label: 'Total',
-        data: [masuk, keluar],
-        backgroundColor: ['green', 'orange']
-      }]
-    }
-  })
-},
-
-async cekTambahUser() {
-  if (this.user_id === "tambah") {
-    const nama = prompt("Masukkan nama user baru:")
-
-    if (!nama) {
-      this.user_id = ""
-      return
-    }
-
-    await fetch(API + "/users", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ nama })
-    })
-
-    await this.getUsers()
-
-    this.user_id = this.users[0]?.id
-  }
-},
-
-async getUsers() {
-  try {
-    const res = await fetch(API + "/users")
-    const data = await res.json()
-    console.log("DATA USERS:", data)
-    this.users = data
-  } catch (err) {
-    console.error("ERROR:", err)
-  }
-},
-
-async tambahUser() {
-  if (!this.namaBaru) return alert("Nama kosong")
-
-  await fetch(API + "/users", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ nama: this.namaBaru })
-  })
-
-  this.namaBaru = ""
-  this.getUsers()
-},
-
-async updateUser(u) {
-  await fetch(API + "/users/" + u.id, {
-    method: "PUT",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ nama: u.nama })
-  })
-
-  alert("User diupdate")
-},
-
-async hapusUser(id) {
-  if (!confirm("Yakin hapus user?")) return
-
-  await fetch(API + "/users/" + id, {
-    method: "DELETE"
-  })
-
-  this.getUsers()
-},
-
-formatTanggal(tanggal) {
-  const d = new Date(tanggal)
-  return d.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  })
-},
-
-editTransaksi(item) {
-  this.editId = item.id
-  this.editJumlah = item.jumlah
-  this.editKeterangan = item.keterangan
-},
-
-async simpanEdit(item) {
-  await fetch(API + "/transaksi/" + item.id, {
-    method: "PUT",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      jumlah: this.editJumlah,
-      keterangan: this.editKeterangan
-    })
-  })
-
-  this.editId = null
-  this.getRiwayat()
-  this.cekSaldo()
-}
-
-},
-mounted() {
-  console.log("APP JALAN")
-  this.getUsers()
-},
-
-watch: {
-  user_id(val) {
-    if (val && val !== "tambah") {
-      this.cekSaldo()
-      this.getRiwayat()
+  watch: {
+    user_id(val) {
+      if (val) {
+        this.cekSaldo()
+        this.getRiwayat()
+      }
     }
   }
-},
 
 }).mount("#app")
 </script>
