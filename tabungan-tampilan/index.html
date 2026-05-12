@@ -145,15 +145,28 @@ td, th {
   <div class="main">
 
     <!-- DASHBOARD -->
-    <div v-if="page==='dashboard'">
-      <h1>Dashboard</h1>
+    <div v-show="page==='dashboard'">
+  <h1>Dashboard</h1>
 
-      <div class="cards">
-        <div class="card masuk">Masuk<br>Rp {{ totalMasuk }}</div>
-        <div class="card keluar">Keluar<br>Rp {{ totalKeluar }}</div>
-        <div class="card saldo">Saldo<br>Rp {{ saldo }}</div>
-      </div>
-    </div>
+  <div class="cards">
+    <div class="card masuk">Masuk<br>Rp {{ totalMasuk }}</div>
+    <div class="card keluar">Keluar<br>Rp {{ totalKeluar }}</div>
+    <div class="card saldo">Saldo<br>Rp {{ saldo }}</div>
+  </div>
+
+  <input type="month" v-model="filterBulan" style="margin-top:20px;">
+
+  <select v-model="modeChart" style="margin-top:10px;">
+    <option value="harian">Harian</option>
+    <option value="mingguan">Mingguan</option>
+    <option value="bulanan">Bulanan</option>
+    <option value="tahunan">Tahunan</option>
+  </select>
+
+  <div style="margin-top:20px; background:white; padding:15px; border-radius:10px;">
+    <canvas id="chartHarian" style="height:300px;"></canvas>
+  </div>
+</div>
 
     <!-- USER -->
     <div v-if="page==='user'">
@@ -245,7 +258,9 @@ Vue.createApp({
       page: "dashboard",
       keterangan: "",
       totalMasuk: 0,
-      totalKeluar: 0
+      totalKeluar: 0,
+      modeChart: "harian",
+      filterBulan: ""
     }
   },
 
@@ -321,6 +336,8 @@ try {
       const res = await fetch(API + "/riwayat/" + this.nama)
       this.riwayat = await res.json()
 
+      console.log(this.riwayat)
+
       this.totalMasuk = 0
       this.totalKeluar = 0
 
@@ -328,6 +345,10 @@ try {
         if (r.tipe === "masuk") this.totalMasuk += Number(r.jumlah)
         else this.totalKeluar += Number(r.jumlah)
       })
+
+      setTimeout(() => {
+      this.renderChartHarian()
+      }, 100)
     },
 
     async hapus(id) {
@@ -350,6 +371,97 @@ try {
         this.cekSaldo()
       }
     },
+
+    renderChartHarian() {
+      console.log("MODE:", this.modeChart)
+  const ctx = document.getElementById('chartHarian')
+  console.log("CHART JALAN") 
+  if (!ctx) return
+
+  if (this.chartHarian) {
+    this.chartHarian.destroy()
+  }
+
+  const map = {}
+
+  this.riwayat.forEach(r => {
+  const date = new Date(r.created_at)
+
+  if (this.filterBulan && this.modeChart !== "tahunan") {
+  const bulanData = date.toISOString().slice(0, 7)
+  if (bulanData !== this.filterBulan) return
+}
+
+  let key
+
+if (this.modeChart === "tahunan") {
+  key = date.getFullYear().toString()
+
+} else if (this.modeChart === "bulanan") {
+  key = date.toISOString().slice(0, 7)
+
+} else if (this.modeChart === "mingguan") {
+  const firstDay = new Date(date.getFullYear(), 0, 1)
+  const week = Math.ceil((((date - firstDay) / 86400000) + firstDay.getDay() + 1) / 7)
+  key = "Minggu " + week
+  
+} else {
+  key = date.toLocaleDateString("id-ID")
+}
+
+  if (!map[key]) {
+  map[key] = { masuk: 0, keluar: 0 }
+}
+
+if (r.tipe === "masuk") {
+  map[key].masuk += Number(r.jumlah)
+} else {
+  map[key].keluar += Number(r.jumlah)
+}
+})
+
+  const labels = Object.keys(map)
+  const dataMasuk = labels.map(t => map[t].masuk)
+  const dataKeluar = labels.map(t => map[t].keluar)
+
+  console.log(labels)
+
+  this.chartHarian = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Tabung',
+          data: dataMasuk,
+          borderColor: 'green'
+        },
+        {
+          label: 'Tarik',
+          data: dataKeluar,
+          borderColor: 'orange'
+        }
+      ]
+    },
+    options: {
+  plugins: {
+    legend: {
+      labels: {
+        color: "black"
+      }
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: "black" }
+    },
+    y: {
+      ticks: { color: "black" }
+    }
+  }
+}
+  })
+},
 
     async simpanEdit(item) {
       if (!this.editJumlah) return alert("Jumlah tidak boleh kosong")
@@ -444,7 +556,14 @@ try {
         this.getRiwayat()
       }
     }
-  }
+  },
+  filterBulan() {
+    this.renderChartHarian()
+  },
+
+  modeChart() {
+  this.renderChartHarian()
+}
 
 }).mount("#app")
 </script>
