@@ -355,8 +355,8 @@ td button{
     </tr>
 
     <tr v-for="r in riwayat" :key="r.id">
-      <td>{{ r.tipe }}</td>
-      <td>{{ r.jumlah }}</td>
+      <td :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">{{ r.tipe }}</td>
+      <td :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">{{ r.jumlah }}</td>
       <td>{{ r.keterangan }}</td>
       <td>{{ formatTanggal(r.created_at) }}</td>
     </tr>
@@ -692,10 +692,30 @@ doc.text("User: " + namaUser, 14, 10)
 
   // Tabel
   doc.autoTable({
-    startY: 20,
-    head: [["No", "Tipe", "Jumlah", "Keterangan", "Tanggal"]],
-    body: rows
-  })
+  startY: 20,
+  head: [["No", "Tipe", "Jumlah", "Keterangan", "Tanggal"]],
+  body: rows,
+
+  didParseCell: function (data) {
+  if (data.section === 'head') return
+
+  const row = data.row.raw
+  if (!row) return
+
+  const tipe = row[1].toLowerCase()
+
+  if (data.column.index === 1 || data.column.index === 2) {
+    if (tipe === "masuk") {
+      data.cell.styles.textColor = [39, 174, 96] // hijau
+    } else {
+      data.cell.styles.textColor = [230, 126, 34] // oren
+    }
+  } else {
+    // kolom lain tetap hitam
+    data.cell.styles.textColor = [0, 0, 0]
+  }
+}
+})
 
   // Total
   const finalY = doc.lastAutoTable.finalY + 10
