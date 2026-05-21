@@ -6,6 +6,8 @@
   <title>Tabungan App</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <style>
     body {
@@ -14,6 +16,14 @@
   height: 100vh;
   background: url("./WhatsApp Image 2026-04-28 at 20.17.52.jpeg") no-repeat center center fixed;
   background-size: cover;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: -1;
 }
 
 /* LAYOUT UTAMA */
@@ -106,6 +116,57 @@ button {
   cursor: pointer;
 }
 
+.btn-tabung {
+  background: #27ae60;
+  color: white;
+  margin-right: 10px;
+}
+
+.btn-tarik {
+  background: #e67e22;
+  color: white;
+}
+
+.btn-tambah {
+  background: #3498db;
+  color: white;
+}
+
+.btn-simpan {
+  background: #f1c40f;
+  color: black;
+  margin-right: 10px;
+}
+
+.btn-hapus {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-simpan {
+  background: #f1c40f;
+  color: black;
+}
+
+.btn-hapus {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-edit {
+  background: #8e5a2b;
+  color: white;
+}
+
+.btn-download {
+  background: #3498db;
+  color: white;
+}
+
+.btn-download:hover{
+  background: #2980b9;
+}
+
 /* TABLE */
 table {
   width: 100%;
@@ -126,6 +187,20 @@ td, th {
   padding: 10px;
   text-align: center;
 }
+
+.text-hijau {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.text-oren {
+  color: #e67e22;
+  font-weight: bold;
+}
+
+td button{
+  margin-right: 5px;
+}
   </style>
 </head>
 
@@ -139,6 +214,7 @@ td, th {
     <button @click="page='dashboard'">Dashboard</button>
     <button @click="page='user'">User</button>
     <button @click="page='transaksi'">Transaksi</button>
+    <button @click="page='laporan'">Laporan</button>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -164,8 +240,9 @@ td, th {
   </select>
 
   <div style="margin-top:20px; background:white; padding:15px; border-radius:10px;">
-    <canvas id="chartHarian" style="height:300px;"></canvas>
-  </div>
+  <p v-if="!riwayat.length" style="text-align:center; color:black;">Data Belum Ada</p>
+  <canvas v-else id="chartHarian" style="height:300px;"></canvas>
+ </div>
 </div>
 
     <!-- USER -->
@@ -173,13 +250,13 @@ td, th {
       <h1>User</h1>
 
       <input v-model="namaBaru" placeholder="Nama user">
-      <button @click="tambahUser">Tambah</button>
+      <button @click="tambahUser" class="btn-tambah">Tambah</button>
 
       <ul>
         <li v-for="u in users">
           <input v-model="u.nama">
-          <button @click="updateUser(u)">💾</button>
-          <button @click="hapusUser(u.id)">🗑️</button>
+          <button @click="updateUser(u)" class="btn-simpan">💾</button>
+          <button @click="hapusUser(u.id)" class="btn-hapus">🗑️</button>
         </li>
       </ul>
     </div>
@@ -198,10 +275,10 @@ td, th {
       <input v-model="jumlah" placeholder="Jumlah">
       <input v-model="keterangan" placeholder="Keterangan">
 
-      <button @click="tabung">Tabung</button>
-      <button @click="tarik">Tarik</button>
+      <button @click="tabung" class="btn-tabung">Tabung</button>
+      <button @click="tarik" class="btn-tarik">Tarik</button>
 
-      <table>
+      <table v-if="riwayat.length">
   <tr>
     <th>Tipe</th>
     <th>Jumlah</th>
@@ -211,34 +288,85 @@ td, th {
   </tr>
 
   <tr v-for="r in riwayat" :key="r.id">
-    <td>{{ r.tipe }}</td>
 
-    <td v-if="editId !== r.id">{{ r.jumlah }}</td>
-    <td v-else>
-      <input v-model="editJumlah">
-    </td>
+  <td :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">
+    {{ r.tipe }}
+  </td>
 
-    <td v-if="editId !== r.id">{{ r.keterangan }}</td>
-    <td v-else>
-      <input v-model="editKeterangan">
-    </td>
+  <!-- JUMLAH -->
+  <td v-if="editId !== r.id"
+      :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">
+    {{ r.jumlah }}
+  </td>
+  <td v-else>
+    <input v-model="editJumlah">
+  </td>
 
-    <td>{{ formatTanggal(r.created_at) }}</td>
+  <!-- KETERANGAN -->
+  <td v-if="editId !== r.id">{{ r.keterangan }}</td>
+  <td v-else>
+    <input v-model="editKeterangan">
+  </td>
 
-    <td>
-      <button @click="hapus(r.id)">🗑️</button>
+  <!-- TANGGAL -->
+  <td>{{ formatTanggal(r.created_at) }}</td>
 
-      <button v-if="editId !== r.id" @click="editTransaksi(r)">✏️</button>
-      <button v-else @click="simpanEdit(r)">💾</button>
-    </td>
-  </tr>
+  <!-- AKSI -->
+  <td>
+  <button @click="hapus(r.id)" class="btn-hapus">🗑️</button>
+
+  <button v-if="editId !== r.id" 
+          @click="editTransaksi(r)" 
+          class="btn-edit">✏️</button>
+
+  <button v-else 
+          @click="simpanEdit(r)" 
+          class="btn-simpan">💾</button>
+</td>
+
+</tr>
 </table>
+
+<p v-else>Belum Ada Transaksi</p>
     </div>
 
-  </div>
+    <!-- LAPORAN -->
+<div v-if="page==='laporan'">
+  <h1>Laporan</h1>
+
+  <select v-model="nama">
+    <option disabled value="">-- Pilih User --</option>
+    <option v-for="u in users" :key="u.id" :value="String(u.id)">
+      {{ u.nama }}
+    </option>
+  </select>
+
+  <button @click="downloadPDF" class="btn-download">
+  Download PDF
+</button>
+
+  <!-- PREVIEW TABEL -->
+  <table v-if="riwayat.length">
+    <tr>
+      <th>Tipe</th>
+      <th>Jumlah</th>
+      <th>Keterangan</th>
+      <th>Tanggal</th>
+    </tr>
+
+    <tr v-for="r in riwayat" :key="r.id">
+      <td>{{ r.tipe }}</td>
+      <td>{{ r.jumlah }}</td>
+      <td>{{ r.keterangan }}</td>
+      <td>{{ formatTanggal(r.created_at) }}</td>
+    </tr>
+  </table>
+
+  <p v-else>Data Belum Ada</p>
 </div>
 
-</div>
+  </div>
+
 
 <script>
 const API = "https://tabungan-api.fairuzim934.workers.dev"
@@ -251,6 +379,7 @@ Vue.createApp({
       saldo: 0,
       riwayat: [],
       users: [],
+      chartHarian: null,
       namaBaru: "",
       editId: null,
       editJumlah: "",
@@ -539,6 +668,46 @@ if (r.tipe === "masuk") {
       this.getUsers()
     },
 
+    downloadPDF() {
+  if (!this.nama) return alert("Pilih user dulu!")
+
+  const { jsPDF } = window.jspdf
+  const doc = new jsPDF()
+
+  // Judul
+  doc.text("Laporan Transaksi", 14, 18)
+  const user = this.users.find(u => String(u.id) === this.nama)
+const namaUser = user ? user.nama : this.nama
+
+doc.text("User: " + namaUser, 14, 10)
+
+  // Data tabel
+  const rows = this.riwayat.map((r, i) => [
+    i + 1,
+    r.tipe,
+    "Rp " + r.jumlah,
+    r.keterangan || "-",
+    this.formatTanggal(r.created_at)
+  ])
+
+  // Tabel
+  doc.autoTable({
+    startY: 20,
+    head: [["No", "Tipe", "Jumlah", "Keterangan", "Tanggal"]],
+    body: rows
+  })
+
+  // Total
+  const finalY = doc.lastAutoTable.finalY + 10
+
+  doc.text("Total Masuk: Rp " + this.totalMasuk, 14, finalY)
+  doc.text("Total Keluar: Rp " + this.totalKeluar, 14, finalY + 8)
+  doc.text("Saldo: Rp " + this.saldo, 14, finalY + 16)
+
+  // Download
+  doc.save("laporan-" + this.nama + ".pdf")
+},
+
     formatTanggal(tanggal) {
       const d = new Date(tanggal)
       return d.toLocaleString("id-ID")
@@ -550,19 +719,20 @@ if (r.tipe === "masuk") {
   },
 
   watch: {
-    user_id(val) {
-      if (val) {
-        this.cekSaldo()
-        this.getRiwayat()
-      }
+  nama(val) {
+    if (val) {
+      this.cekSaldo()
+      this.getRiwayat()
     }
   },
+
   filterBulan() {
     this.renderChartHarian()
   },
 
   modeChart() {
-  this.renderChartHarian()
+    this.renderChartHarian()
+  }
 }
 
 }).mount("#app")
