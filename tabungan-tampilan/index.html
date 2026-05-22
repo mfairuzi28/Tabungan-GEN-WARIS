@@ -229,15 +229,23 @@ td button{
 
 <body>
 
-<div id="app" class="layout">
+<div id="app">
+<div v-if="!userLogin" style="max-width:300px;margin:auto;margin-top:100px;background:white;padding:20px;border-radius:10px;">
+  <h3>Login</h3>
+  <input v-model="loginUsername" placeholder="Username">
+  <input v-model="loginPassword" type="password" placeholder="Password">
+  <button @click="login(loginUsername, loginPassword)">Login</button>
+</div>
+<div v-if="userLogin" class="layout">
 
   <!-- SIDEBAR -->
   <div class="sidebar">
     <h2>Tabungan</h2>
     <button @click="page='dashboard'">Dashboard</button>
-    <button @click="page='user'">User</button>
+    <button v-if="userLogin?.role==='admin'" @click="page='user'">User</button>
     <button @click="page='transaksi'">Transaksi</button>
     <button @click="page='laporan'">Laporan</button>
+    <button @click="logout">Logout</button>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -288,7 +296,8 @@ td button{
     <div v-if="page==='transaksi'">
       <h1>Transaksi</h1>
 
-      <select v-model="nama">
+  <select v-if="userLogin?.role==='admin'" v-model="nama">
+  <input v-else :value="userLogin?.nama" disabled>
   <option disabled value="">-- Pilih User --</option>
   <option v-for="u in users" :key="u.id" :value="String(u.id)">
     {{ u.nama }}
@@ -298,8 +307,8 @@ td button{
       <input v-model="jumlah" placeholder="Jumlah">
       <input v-model="keterangan" placeholder="Keterangan">
 
-      <button @click="tabung" class="btn-tabung">Tabung</button>
-      <button @click="tarik" class="btn-tarik">Tarik</button>
+      <button v-if="userLogin?.role==='admin'" @click="tabung" class="btn-tabung">Tabung</button>
+      <button v-if="userLogin?.role==='admin'" @click="tarik" class="btn-tarik">Tarik</button>
 
       <table v-if="riwayat.length">
   <tr>
@@ -336,15 +345,13 @@ td button{
 
   <!-- AKSI -->
   <td>
-  <button @click="hapus(r.id)" class="btn-hapus">🗑️</button>
+  <button v-if="userLogin?.role==='admin'" @click="hapus(r.id)">🗑️</button>
 
-  <button v-if="editId !== r.id" 
-          @click="editTransaksi(r)" 
-          class="btn-edit">✏️</button>
+  <button v-if="userLogin?.role==='admin' && editId !== r.id" 
+        @click="editTransaksi(r)">✏️</button>
 
-  <button v-else 
-          @click="simpanEdit(r)" 
-          class="btn-simpan">💾</button>
+  <button v-if="userLogin?.role==='admin' && editId === r.id" 
+        @click="simpanEdit(r)">💾</button>
 </td>
 
 </tr>
@@ -397,6 +404,9 @@ const API = "https://tabungan-api.fairuzim934.workers.dev"
 Vue.createApp({
   data() {
     return {
+      loginUsername: "",
+      loginPassword: "",
+      userLogin: null,
       nama: "",
       jumlah: "",
       saldo: 0,
@@ -418,7 +428,36 @@ Vue.createApp({
 
   methods: {
 
+    async login(username, password) {
+  const res = await fetch(API + "/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    alert(data.error)
+    return
+  }
+
+  this.userLogin = data
+  localStorage.setItem("user", JSON.stringify(data))
+
+  // default ke dashboard
+  this.page = "dashboard"
+},
+
+logout() {
+  localStorage.removeItem("user")
+  this.userLogin = null
+},
+
     async tabung() {
+  if (this.userLogin?.role !== "admin") {
+    return alert("Akses Ditolak")
+  }
   if (!this.nama) return alert("Pilih user dulu!")
   if (!this.jumlah) return alert("Isi jumlah dulu!")
 
@@ -449,6 +488,10 @@ try {
 },
 
     async tarik() {
+    if (this.userLogin?.role !== "admin") {
+    return alert("Akses Ditolak")
+  }
+
   if (!this.nama) return alert("Pilih user dulu!")
   if (!this.jumlah) return alert("Isi jumlah dulu!")
 
@@ -504,6 +547,11 @@ try {
     },
 
     async hapus(id) {
+
+      if (this.userLogin?.role !== "admin") {
+    return alert("Akses Ditolak")
+  }
+
       const res = await fetch(API + "/transaksi/" + id, {
         method: "DELETE"
       })
@@ -757,12 +805,24 @@ doc.text("User: " + namaUser, 14, 10)
     }
   },
 
-  mounted() {
-    this.getUsers()
-  },
+ mounted() {
+  const user = localStorage.getItem("user")
+  if (user) {
+    this.userLogin = JSON.parse(user)
+
+    if (this.userLogin.role === "user") {
+      this.nama = String(this.userLogin.id)
+   }
+  }
+  this.getUsers()
+},
 
   watch: {
   nama(val) {
+    if (this.userLogin.role === "user") {
+      this.nama = String(this.userLogin.id)
+    }
+
     if (val) {
       this.cekSaldo()
       this.getRiwayat()

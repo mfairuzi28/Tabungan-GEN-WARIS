@@ -14,6 +14,37 @@ app.use('*', cors({
   allowHeaders: ['Content-Type']
 }))
 
+app.post('/login', async (c) => {
+  const { username, password } = await c.req.json()
+
+  // ADMIN
+  if (username === "admin" && password === "1234") {
+    return c.json({
+      role: "admin",
+      nama: "admin"
+    })
+  }
+
+  // USER
+  const user = await c.env.DB.prepare(
+    "SELECT * FROM users WHERE nama = ?"
+  ).bind(username).first()
+
+  if (!user) {
+    return c.json({ error: "User tidak ditemukan" }, 404)
+  }
+
+  if (String(user.id) !== String(password)) {
+    return c.json({ error: "Password salah" }, 401)
+  }
+
+  return c.json({
+    role: "user",
+    nama: user.nama,
+    id: user.id
+  })
+})
+
 app.get('/', (c) => {
   return c.text('API jalan')
 })
