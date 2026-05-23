@@ -230,206 +230,165 @@ td button{
 <body>
 
 <div id="app">
-<div v-if="!userLogin" style="max-width:300px;margin:auto;margin-top:100px;background:white;padding:20px;border-radius:10px;">
-  <h3>Login</h3>
-  <input v-model="loginUsername" placeholder="Username">
-  <input v-model="loginPassword" type="password" placeholder="Password">
-  <button @click="login(loginUsername, loginPassword)">Login</button>
-</div>
-<div v-if="userLogin" class="layout">
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <h2>Tabungan</h2>
-    <button @click="page='dashboard'">Dashboard</button>
-    <button v-if="userLogin?.role==='admin'" @click="page='user'">User</button>
-    <button @click="page='transaksi'">Transaksi</button>
-    <button @click="page='laporan'">Laporan</button>
-    <button @click="logout">Logout</button>
-  </div>
-</div>
-
-  <!-- MAIN CONTENT -->
-  <div class="main"></div>
-
-    <!-- DASHBOARD -->
-    <div v-show="page==='dashboard'">
-  <h1>
-  {{ userLogin.role === 'admin' 
-      ? 'Dashboard Semua User' 
-      : 'Dashboard Saya' }}
-</h1>
-
-<p v-if="userLogin.role === 'user'">
-  Data milik: <b>{{ userLogin.nama }}</b>
-</p>
-
-  <div class="cards">
-
-  <div class="card masuk">
-    {{ userLogin.role === 'admin' ? 'Total Masuk' : 'Uang Masuk' }}
-    <br>Rp {{ totalMasuk }}
+  <!-- LOGIN -->
+  <div v-if="!userLogin" style="max-width:300px;margin:auto;margin-top:100px;background:white;padding:20px;border-radius:10px;">
+    <h3>Login</h3>
+    <input v-model="loginUsername" placeholder="Username">
+    <input v-model="loginPassword" type="password" placeholder="Password">
+    <button @click="login(loginUsername, loginPassword)">Login</button>
   </div>
 
-  <div class="card keluar">
-    {{ userLogin.role === 'admin' ? 'Total Keluar' : 'Uang Keluar' }}
-    <br>Rp {{ totalKeluar }}
-  </div>
+  <!-- APP -->
+  <div v-if="userLogin" class="layout">
 
-  <div class="card saldo">
-    Saldo
-    <br>Rp {{ saldo }}
-  </div>
-
-</div>
-
-  <input type="month" v-model="filterBulan" style="margin-top:20px;">
-
-  <select v-model="modeChart" style="margin-top:10px;">
-    <option value="harian">Harian</option>
-    <option value="mingguan">Mingguan</option>
-    <option value="bulanan">Bulanan</option>
-    <option value="tahunan">Tahunan</option>
-  </select>
-
-  <div style="margin-top:20px; background:white; padding:15px; border-radius:10px;">
-  <p v-if="!riwayat.length" style="text-align:center; color:black;">Data Belum Ada</p>
-  <canvas v-else id="chartHarian" style="height:300px;"></canvas>
- </div>
-</div>
-
-    <!-- USER -->
-    <div v-if="page==='user'">
-      <h1>User</h1>
-
-      <input v-model="namaBaru" placeholder="Nama user">
-      <button @click="tambahUser" class="btn-tambah">Tambah</button>
-
-      <ul>
-        <li v-for="u in users">
-          <input v-model="u.nama">
-          <button @click="updateUser(u)" class="btn-simpan">💾</button>
-          <button @click="hapusUser(u.id)" class="btn-hapus">🗑️</button>
-        </li>
-      </ul>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <h2>Tabungan</h2>
+      <button @click="page='dashboard'">Dashboard</button>
+      <button v-if="userLogin?.role==='admin'" @click="page='user'">User</button>
+      <button @click="page='transaksi'">Transaksi</button>
+      <button @click="page='laporan'">Laporan</button>
+      <button @click="logout">Logout</button>
     </div>
 
-    <!-- TRANSAKSI -->
-    <div v-if="page==='transaksi'">
-      <h1>
-  {{ userLogin.role === 'admin' 
-      ? 'Transaksi Semua User' 
-      : 'Transaksi Saya' }}
-</h1>
+    <!-- MAIN -->
+    <div class="main">
 
-  <select v-if="userLogin?.role==='admin'" v-model="nama">
-  <option disabled value="">-- Pilih User --</option>
-  <option v-for="u in users" :key="u.id" :value="String(u.id)">
-    {{ u.nama }}
-  </option>
-</select>
+      <!-- DASHBOARD -->
+      <div v-show="page==='dashboard'">
+        <h1>
+          {{ userLogin.role === 'admin'
+              ? 'Dashboard Semua User'
+              : 'Dashboard Saya' }}
+        </h1>
 
-      <input v-else :value="userLogin?.nama" disabled>
-      <input v-model="jumlah" placeholder="Jumlah">
-      <input v-model="keterangan" placeholder="Keterangan">
+        <p v-if="userLogin.role === 'user'">
+          Data milik: <b>{{ userLogin.nama }}</b>
+        </p>
 
-      <button v-if="userLogin?.role==='admin'" @click="tabung" class="btn-tabung">Tabung</button>
-      <button v-if="userLogin?.role==='admin'" @click="tarik" class="btn-tarik">Tarik</button>
+        <div class="cards">
+          <div class="card masuk">
+            {{ userLogin.role === 'admin' ? 'Total Masuk' : 'Uang Masuk' }}
+            <br>Rp {{ totalMasuk }}
+          </div>
 
-      <table v-if="riwayat.length">
-  <tr>
-    <th>Tipe</th>
-    <th>Jumlah</th>
-    <th>Keterangan</th>
-    <th>Tanggal</th>
-    <th>Aksi</th>
-  </tr>
+          <div class="card keluar">
+            {{ userLogin.role === 'admin' ? 'Total Keluar' : 'Uang Keluar' }}
+            <br>Rp {{ totalKeluar }}
+          </div>
 
-  <tr v-for="r in riwayat" :key="r.id">
+          <div class="card saldo">
+            Saldo
+            <br>Rp {{ saldo }}
+          </div>
+        </div>
 
-  <td :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">
-    {{ r.tipe }}
-  </td>
+        <input type="month" v-model="filterBulan">
+        <select v-model="modeChart">
+          <option value="harian">Harian</option>
+          <option value="mingguan">Mingguan</option>
+          <option value="bulanan">Bulanan</option>
+          <option value="tahunan">Tahunan</option>
+        </select>
 
-  <!-- JUMLAH -->
-  <td v-if="editId !== r.id"
-      :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">
-    {{ r.jumlah }}
-  </td>
-  <td v-else>
-    <input v-model="editJumlah">
-  </td>
+        <div>
+          <p v-if="!riwayat.length">Data Belum Ada</p>
+          <canvas v-else id="chartHarian"></canvas>
+        </div>
+      </div>
 
-  <!-- KETERANGAN -->
-  <td v-if="editId !== r.id">{{ r.keterangan }}</td>
-  <td v-else>
-    <input v-model="editKeterangan">
-  </td>
+      <!-- USER -->
+      <div v-if="page==='user'">
+        <h1>User</h1>
 
-  <!-- TANGGAL -->
-  <td>{{ formatTanggal(r.created_at) }}</td>
+        <input v-model="namaBaru" placeholder="Nama user">
+        <button @click="tambahUser">Tambah</button>
 
-  <!-- AKSI -->
-  <td>
-  <button class="btn-hapus" v-if="userLogin?.role==='admin'" @click="hapus(r.id)">🗑️</button>
+        <ul>
+          <li v-for="u in users" :key="u.id">
+            <input v-model="u.nama">
+            <button @click="updateUser(u)">💾</button>
+            <button @click="hapusUser(u.id)">🗑️</button>
+          </li>
+        </ul>
+      </div>
 
-  <button class="btn-edit" v-if="userLogin?.role==='admin' && editId !== r.id" 
-        @click="editTransaksi(r)">✏️</button>
+      <!-- TRANSAKSI -->
+      <div v-if="page==='transaksi'">
+        <h1>Transaksi</h1>
 
-  <button class="btn-simpan" v-if="userLogin?.role==='admin' && editId === r.id" 
-        @click="simpanEdit(r)">💾</button>
-</td>
+        <select v-if="userLogin?.role==='admin'" v-model="nama">
+          <option disabled value="">-- Pilih User --</option>
+          <option v-for="u in users" :value="String(u.id)">
+            {{ u.nama }}
+          </option>
+        </select>
 
-</tr>
-</table>
+        <input v-else :value="userLogin?.nama" disabled>
 
-<p v-else>Belum Ada Transaksi</p>
+        <input v-model="jumlah" placeholder="Jumlah">
+        <input v-model="keterangan" placeholder="Keterangan">
+
+        <button v-if="userLogin?.role==='admin'" @click="tabung">Tabung</button>
+        <button v-if="userLogin?.role==='admin'" @click="tarik">Tarik</button>
+
+        <table v-if="riwayat.length">
+          <tr>
+            <th>Tipe</th>
+            <th>Jumlah</th>
+            <th>Keterangan</th>
+            <th>Tanggal</th>
+          </tr>
+
+          <tr v-for="r in riwayat" :key="r.id">
+            <td>{{ r.tipe }}</td>
+            <td>{{ r.jumlah }}</td>
+            <td>{{ r.keterangan }}</td>
+            <td>{{ formatTanggal(r.created_at) }}</td>
+          </tr>
+        </table>
+
+        <p v-else>Belum Ada Transaksi</p>
+      </div>
+
+      <!-- LAPORAN -->
+      <div v-if="page==='laporan'">
+        <h1>Laporan</h1>
+
+        <select v-if="userLogin?.role==='admin'" v-model="nama">
+          <option disabled value="">-- Pilih User --</option>
+          <option v-for="u in users" :value="String(u.id)">
+            {{ u.nama }}
+          </option>
+        </select>
+
+        <button @click="downloadPDF">Download PDF</button>
+
+        <table v-if="riwayat.length">
+          <tr>
+            <th>Tipe</th>
+            <th>Jumlah</th>
+            <th>Keterangan</th>
+            <th>Tanggal</th>
+          </tr>
+
+          <tr v-for="r in riwayat">
+            <td>{{ r.tipe }}</td>
+            <td>{{ r.jumlah }}</td>
+            <td>{{ r.keterangan }}</td>
+            <td>{{ formatTanggal(r.created_at) }}</td>
+          </tr>
+        </table>
+      </div>
+
     </div>
 
-    <!-- LAPORAN -->
-<div v-if="page==='laporan'">
-  <h1>
-  {{ userLogin.role === 'admin' 
-      ? 'Laporan Semua User' 
-      : 'Laporan Saya' }}
-</h1>
-
-  <select v-if="userLogin?.role==='admin'" v-model="nama">
-    <option disabled value="">-- Pilih User --</option>
-    <option v-for="u in users" :key="u.id" :value="String(u.id)">
-      {{ u.nama }}
-    </option>
-  </select>
-
-  <button @click="downloadPDF" class="btn-download">
-  Download PDF
-</button>
-
-  <!-- PREVIEW TABEL -->
-  <table v-if="riwayat.length">
-    <tr>
-      <th>Tipe</th>
-      <th>Jumlah</th>
-      <th>Keterangan</th>
-      <th>Tanggal</th>
-    </tr>
-
-    <tr v-for="r in riwayat" :key="r.id">
-      <td :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">{{ r.tipe }}</td>
-      <td :class="r.tipe === 'masuk' ? 'text-hijau' : 'text-oren'">{{ r.jumlah }}</td>
-      <td>{{ r.keterangan }}</td>
-      <td>{{ formatTanggal(r.created_at) }}</td>
-    </tr>
-  </table>
-
-  <p v-else>Data Belum Ada</p>
-</div>
-
   </div>
-</div>
-</div>
+
 </div>
 
+</body>
 
 <script>
 const API = "https://tabungan-api.fairuzim934.workers.dev"
@@ -461,7 +420,7 @@ Vue.createApp({
 
   methods: {
 
-    async login(username, password) {
+  async login(username, password) {
   const res = await fetch(API + "/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -475,10 +434,26 @@ Vue.createApp({
     return
   }
 
+  this.riwayat = []
+  this.saldo = 0
+  this.totalMasuk = 0
+  this.totalKeluar = 0
+  this.nama = ""
+  this.users = []
+  this.filterBulan = ""
+  this.chartHarian && this.chartHarian.destroy()
+
   this.userLogin = data
   localStorage.setItem("user", JSON.stringify(data))
 
-  // default ke dashboard
+  if (data.role === "user") {
+    this.nama = String(data.id)
+    this.getRiwayat()
+    this.cekSaldo()
+  } else {
+    this.getSemuaRiwayat()
+  }
+
   this.page = "dashboard"
 },
 
@@ -515,8 +490,9 @@ try {
     alert(data.error)
   } else {
     alert("Berhasil")
-    this.getRiwayat()
+    await this.getRiwayat()
     this.cekSaldo()
+    this.renderChartHarian()
   }
 },
 
@@ -549,8 +525,9 @@ try {
     alert(data.error)
   } else {
     alert("Berhasil")
-    this.getRiwayat()
+    await this.getRiwayat()
     this.cekSaldo()
+    this.renderChartHarian()
   }
 },
 
@@ -564,7 +541,7 @@ try {
       const res = await fetch(API + "/riwayat/" + this.nama)
       this.riwayat = await res.json()
 
-      console.log(this.riwayat)
+      console.log("DATA RIWAYAT:", this.riwayat)
 
       this.totalMasuk = 0
       this.totalKeluar = 0
@@ -580,6 +557,8 @@ try {
     },
 
     async getSemuaRiwayat() {
+      await this.getUsers()
+
   const res = await fetch(API + "/riwayat")
   this.riwayat = await res.json()
 
@@ -624,84 +603,113 @@ try {
       }
     },
 
-    renderChartHarian() {
+renderChartHarian() {
+  if (this.userLogin.role === "admin" && !this.users.length) return
+
   const ctx = document.getElementById('chartHarian')
   if (!ctx) return
 
-  if (this.chartHarian) {
-    this.chartHarian.destroy()
-  }
+  if (this.chartHarian) this.chartHarian.destroy()
 
   const map = {}
 
   this.riwayat.forEach(r => {
-    const date = new Date(r.created_at)
-    const key = date.toLocaleDateString("id-ID")
+    console.log("USER_ID:", r.user_id, "DATA:", r)
+
+    const d = new Date(r.created_at)
+
+    if (this.filterBulan) {
+      const bulan =
+        d.getFullYear() + "-" +
+        String(d.getMonth()+1).padStart(2,"0")
+
+      if (bulan !== this.filterBulan) return
+    }
+
+    let key = ""
+
+    if (this.modeChart === "harian") {
+      key = d.toLocaleDateString("id-ID")
+    } else if (this.modeChart === "mingguan") {
+      const week = Math.ceil(d.getDate() / 7)
+      key = `${d.getFullYear()}-M${d.getMonth()+1}-W${week}`
+    } else if (this.modeChart === "bulanan") {
+      key = `${d.getFullYear()}-${d.getMonth()+1}`
+    } else {
+      key = `${d.getFullYear()}`
+    }
 
     if (!map[key]) map[key] = {}
 
-    const userId = String(r.user_id)
+    const uid = String(r.user_id || r.nama)
 
-    if (!map[key][userId]) {
-      map[key][userId] = { masuk: 0, keluar: 0 }
+    if (!map[key][uid]) {
+      map[key][uid] = { masuk: 0, keluar: 0 }
     }
 
     if (r.tipe === "masuk") {
-      map[key][userId].masuk += Number(r.jumlah)
+      map[key][uid].masuk += Number(r.jumlah)
     } else {
-      map[key][userId].keluar += Number(r.jumlah)
+      map[key][uid].keluar += Number(r.jumlah)
     }
   })
 
-  const labels = Object.keys(map)
-const datasets = []
+  const labels = Object.keys(map).sort()
 
-if (this.userLogin.role === "admin") {
+  if (!labels.length) return
 
-  //ADMIN = semua user
-  this.users.forEach(u => {
+  const datasets = []
+
+  if (this.userLogin.role === "admin") {
+    this.users.forEach(u => {
+      const id = String(u.id)
+
+      datasets.push({
+        label: u.nama + " (Masuk)",
+        data: labels.map(t => map[t]?.[id]?.masuk || 0),
+        borderColor: "#27ae60",
+        tension: 0.4
+      })
+
+      datasets.push({
+        label: u.nama + " (Keluar)",
+        data: labels.map(t => map[t]?.[id]?.keluar || 0),
+        borderColor: "#e67e22",
+        borderDash: [5,5],
+        tension: 0.4
+      })
+    })
+  } else {
+    const id = String(this.userLogin.id)
+
     datasets.push({
-      label: u.nama + " (Masuk)",
-      data: labels.map(t => map[t]?.[idUser]?.masuk || 0),
+      label: "Masuk",
+      data: labels.map(t => map[t]?.[id]?.masuk || 0),
       borderColor: "#27ae60",
-      fill: false
+      tension: 0.4
     })
 
     datasets.push({
-      label: this.userLogin.role === "admin"? u.nama + " (Masuk)": "Masuk",
-      data: labels.map(t => map[t]?.[idUser]?.keluar || 0),
+      label: "Keluar",
+      data: labels.map(t => map[t]?.[id]?.keluar || 0),
       borderColor: "#e67e22",
       borderDash: [5,5],
-      fill: false
+      tension: 0.4
     })
-  })
-
-} else {
-
-  //USER = hanya dirinya sendiri
-  const idUser = String (this.userLogin.id)
-
-  datasets.push({
-    label: "Masuk",
-    data: labels.map(t => map[t]?.[idUser]?.masuk || 0),
-    borderColor: "#27ae60",
-    fill: false
-  })
-
-  datasets.push({
-    label: "Keluar",
-    data: labels.map(t => map[t]?.[idUser]?.keluar || 0),
-    borderColor: "#e67e22",
-    borderDash: [5,5],
-    fill: false
-  })
-}
+  }
 
   this.chartHarian = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels,
-      datasets
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
     }
   })
 },
@@ -748,6 +756,9 @@ if (this.userLogin.role === "admin") {
     async getUsers() {
       const res = await fetch(API + "/users")
       this.users = await res.json()
+      this.$nextTick(() => {
+       this.renderChartHarian()
+     })
     },
 
     async tambahUser() {
@@ -888,6 +899,9 @@ doc.text("User: " + namaUser, 14, 10)
 
   page(val) {
     if (val === "dashboard") {
+
+      this.filterBulan = ""
+
       if (this.userLogin?.role === "admin") {
         this.getSemuaRiwayat()
       } else {
@@ -903,7 +917,7 @@ doc.text("User: " + namaUser, 14, 10)
 
   modeChart() {
     this.renderChartHarian()
-  }
+  },
 }
 
 }).mount("#app")
