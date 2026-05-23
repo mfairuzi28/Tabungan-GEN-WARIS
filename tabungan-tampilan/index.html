@@ -253,13 +253,34 @@ td button{
 
     <!-- DASHBOARD -->
     <div v-show="page==='dashboard'">
-  <h1>Dashboard</h1>
+  <h1>
+  {{ userLogin.role === 'admin' 
+      ? 'Dashboard Semua User' 
+      : 'Dashboard Saya' }}
+</h1>
+
+<p v-if="userLogin.role === 'user'">
+  Data milik: <b>{{ userLogin.nama }}</b>
+</p>
 
   <div class="cards">
-    <div class="card masuk">Masuk<br>Rp {{ totalMasuk }}</div>
-    <div class="card keluar">Keluar<br>Rp {{ totalKeluar }}</div>
-    <div class="card saldo">Saldo<br>Rp {{ saldo }}</div>
+
+  <div class="card masuk">
+    {{ userLogin.role === 'admin' ? 'Total Masuk' : 'Uang Masuk' }}
+    <br>Rp {{ totalMasuk }}
   </div>
+
+  <div class="card keluar">
+    {{ userLogin.role === 'admin' ? 'Total Keluar' : 'Uang Keluar' }}
+    <br>Rp {{ totalKeluar }}
+  </div>
+
+  <div class="card saldo">
+    Saldo
+    <br>Rp {{ saldo }}
+  </div>
+
+</div>
 
   <input type="month" v-model="filterBulan" style="margin-top:20px;">
 
@@ -294,16 +315,20 @@ td button{
 
     <!-- TRANSAKSI -->
     <div v-if="page==='transaksi'">
-      <h1>Transaksi</h1>
+      <h1>
+  {{ userLogin.role === 'admin' 
+      ? 'Transaksi Semua User' 
+      : 'Transaksi Saya' }}
+</h1>
 
   <select v-if="userLogin?.role==='admin'" v-model="nama">
-  <input v-else :value="userLogin?.nama" disabled>
   <option disabled value="">-- Pilih User --</option>
   <option v-for="u in users" :key="u.id" :value="String(u.id)">
     {{ u.nama }}
   </option>
 </select>
 
+      <input v-else :value="userLogin?.nama" disabled>
       <input v-model="jumlah" placeholder="Jumlah">
       <input v-model="keterangan" placeholder="Keterangan">
 
@@ -345,12 +370,12 @@ td button{
 
   <!-- AKSI -->
   <td>
-  <button v-if="userLogin?.role==='admin'" @click="hapus(r.id)">🗑️</button>
+  <button class="btn-hapus" v-if="userLogin?.role==='admin'" @click="hapus(r.id)">🗑️</button>
 
-  <button v-if="userLogin?.role==='admin' && editId !== r.id" 
+  <button class="btn-edit" v-if="userLogin?.role==='admin' && editId !== r.id" 
         @click="editTransaksi(r)">✏️</button>
 
-  <button v-if="userLogin?.role==='admin' && editId === r.id" 
+  <button class="btn-simpan" v-if="userLogin?.role==='admin' && editId === r.id" 
         @click="simpanEdit(r)">💾</button>
 </td>
 
@@ -362,9 +387,13 @@ td button{
 
     <!-- LAPORAN -->
 <div v-if="page==='laporan'">
-  <h1>Laporan</h1>
+  <h1>
+  {{ userLogin.role === 'admin' 
+      ? 'Laporan Semua User' 
+      : 'Laporan Saya' }}
+</h1>
 
-  <select v-model="nama">
+  <select v-if="userLogin?.role==='admin'" v-model="nama">
     <option disabled value="">-- Pilih User --</option>
     <option v-for="u in users" :key="u.id" :value="String(u.id)">
       {{ u.nama }}
@@ -541,10 +570,29 @@ try {
         else this.totalKeluar += Number(r.jumlah)
       })
 
-      setTimeout(() => {
-      this.renderChartHarian()
-      }, 100)
+      this.$nextTick(() => {
+  this.renderChartHarian()
+})
     },
+
+    async getSemuaRiwayat() {
+  const res = await fetch(API + "/riwayat")
+  this.riwayat = await res.json()
+
+  this.totalMasuk = 0
+  this.totalKeluar = 0
+
+  this.riwayat.forEach(r => {
+    if (r.tipe === "masuk") this.totalMasuk += Number(r.jumlah)
+    else this.totalKeluar += Number(r.jumlah)
+  })
+
+  this.saldo = this.totalMasuk - this.totalKeluar
+
+  this.$nextTick(() => {
+  this.renderChartHarian()
+})
+},
 
     async hapus(id) {
 
@@ -573,9 +621,7 @@ try {
     },
 
     renderChartHarian() {
-      console.log("MODE:", this.modeChart)
   const ctx = document.getElementById('chartHarian')
-  console.log("CHART JALAN") 
   if (!ctx) return
 
   if (this.chartHarian) {
@@ -585,81 +631,76 @@ try {
   const map = {}
 
   this.riwayat.forEach(r => {
-  const date = new Date(r.created_at)
+    const date = new Date(r.created_at)
+    const key = date.toLocaleDateString("id-ID")
 
-  if (this.filterBulan && this.modeChart !== "tahunan") {
-  const bulanData = date.toISOString().slice(0, 7)
-  if (bulanData !== this.filterBulan) return
-}
+    if (!map[key]) map[key] = {}
 
-  let key
+    const userId = String(r.user_id)
 
-if (this.modeChart === "tahunan") {
-  key = date.getFullYear().toString()
+    if (!map[key][userId]) {
+      map[key][userId] = { masuk: 0, keluar: 0 }
+    }
 
-} else if (this.modeChart === "bulanan") {
-  key = date.toISOString().slice(0, 7)
-
-} else if (this.modeChart === "mingguan") {
-  const firstDay = new Date(date.getFullYear(), 0, 1)
-  const week = Math.ceil((((date - firstDay) / 86400000) + firstDay.getDay() + 1) / 7)
-  key = "Minggu " + week
-  
-} else {
-  key = date.toLocaleDateString("id-ID")
-}
-
-  if (!map[key]) {
-  map[key] = { masuk: 0, keluar: 0 }
-}
-
-if (r.tipe === "masuk") {
-  map[key].masuk += Number(r.jumlah)
-} else {
-  map[key].keluar += Number(r.jumlah)
-}
-})
+    if (r.tipe === "masuk") {
+      map[key][userId].masuk += Number(r.jumlah)
+    } else {
+      map[key][userId].keluar += Number(r.jumlah)
+    }
+  })
 
   const labels = Object.keys(map)
-  const dataMasuk = labels.map(t => map[t].masuk)
-  const dataKeluar = labels.map(t => map[t].keluar)
+  const datasets = []
 
-  console.log(labels)
+  if (this.userLogin.role === "admin") {
+
+    // ✅ ADMIN: semua user
+    this.users.forEach(u => {
+      const id = String(u.id)
+
+      datasets.push({
+        label: u.nama + " (Masuk)",
+        data: labels.map(t => map[t]?.[id]?.masuk || 0),
+        borderColor: "#27ae60",
+        fill: false
+      })
+
+      datasets.push({
+        label: u.nama + " (Keluar)",
+        data: labels.map(t => map[t]?.[id]?.keluar || 0),
+        borderColor: "#e67e22",
+        borderDash: [5,5],
+        fill: false
+      })
+    })
+
+  } else {
+
+    // ✅ USER: hanya dirinya sendiri
+    const idUser = String(this.userLogin.id)
+
+    datasets.push({
+      label: "Masuk",
+      data: labels.map(t => map[t]?.[idUser]?.masuk || 0),
+      borderColor: "#27ae60",
+      fill: false
+    })
+
+    datasets.push({
+      label: "Keluar",
+      data: labels.map(t => map[t]?.[idUser]?.keluar || 0),
+      borderColor: "#e67e22",
+      borderDash: [5,5],
+      fill: false
+    })
+  }
 
   this.chartHarian = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
-      datasets: [
-        {
-          label: 'Tabung',
-          data: dataMasuk,
-          borderColor: 'green'
-        },
-        {
-          label: 'Tarik',
-          data: dataKeluar,
-          borderColor: 'orange'
-        }
-      ]
-    },
-    options: {
-  plugins: {
-    legend: {
-      labels: {
-        color: "black"
-      }
+      datasets
     }
-  },
-  scales: {
-    x: {
-      ticks: { color: "black" }
-    },
-    y: {
-      ticks: { color: "black" }
-    }
-  }
-}
   })
 },
 
@@ -740,7 +781,10 @@ if (r.tipe === "masuk") {
     },
 
     downloadPDF() {
-  if (!this.nama) return alert("Pilih user dulu!")
+      if (this.userLogin.role === "user") {
+        this.nama = String(this.userLogin.id)
+      }
+      if (!this.nama) return alert("Pilih user dulu!")
 
   const { jsPDF } = window.jspdf
   const doc = new jsPDF()
@@ -807,25 +851,51 @@ doc.text("User: " + namaUser, 14, 10)
 
  mounted() {
   const user = localStorage.getItem("user")
+
   if (user) {
     this.userLogin = JSON.parse(user)
 
     if (this.userLogin.role === "user") {
+      // user
       this.nama = String(this.userLogin.id)
-   }
+
+      this.getRiwayat()
+      this.cekSaldo()
+
+    } else {
+      // admin
+      this.getSemuaRiwayat()
+    }
   }
+
   this.getUsers()
 },
 
   watch: {
   nama(val) {
-    if (this.userLogin.role === "user") {
+
+    //paksa user selalu pakai ID sendiri
+    if (this.userLogin?.role === "user") {
       this.nama = String(this.userLogin.id)
+      return //biar gak lanjut ke bawah
     }
 
-    if (val) {
-      this.cekSaldo()
+    //admin
+    if (val && this.userLogin?.role === "admin") {
       this.getRiwayat()
+      this.cekSaldo()
+    }
+  }
+},
+
+  page(val) {
+    if (val === "dashboard") {
+      if (this.userLogin?.role === "admin") {
+        this.getSemuaRiwayat()
+      } else {
+        this.getRiwayat()
+        this.cekSaldo()
+      }
     }
   },
 
@@ -836,9 +906,9 @@ doc.text("User: " + namaUser, 14, 10)
   modeChart() {
     this.renderChartHarian()
   }
-}
+})
 
-}).mount("#app")
+.mount("#app")
 </script>
 
 </body>
