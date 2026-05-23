@@ -247,9 +247,10 @@ td button{
     <button @click="page='laporan'">Laporan</button>
     <button @click="logout">Logout</button>
   </div>
+</div>
 
   <!-- MAIN CONTENT -->
-  <div class="main">
+  <div class="main"></div>
 
     <!-- DASHBOARD -->
     <div v-show="page==='dashboard'">
@@ -425,6 +426,9 @@ td button{
 </div>
 
   </div>
+</div>
+</div>
+</div>
 
 
 <script>
@@ -517,7 +521,7 @@ try {
 },
 
     async tarik() {
-    if (this.userLogin?.role !== "admin") {
+  if (this.userLogin?.role !== "admin") {
     return alert("Akses Ditolak")
   }
 
@@ -650,50 +654,48 @@ try {
   })
 
   const labels = Object.keys(map)
-  const datasets = []
+const datasets = []
 
-  if (this.userLogin.role === "admin") {
+if (this.userLogin.role === "admin") {
 
-    // ✅ ADMIN: semua user
-    this.users.forEach(u => {
-      const id = String(u.id)
-
-      datasets.push({
-        label: u.nama + " (Masuk)",
-        data: labels.map(t => map[t]?.[id]?.masuk || 0),
-        borderColor: "#27ae60",
-        fill: false
-      })
-
-      datasets.push({
-        label: u.nama + " (Keluar)",
-        data: labels.map(t => map[t]?.[id]?.keluar || 0),
-        borderColor: "#e67e22",
-        borderDash: [5,5],
-        fill: false
-      })
-    })
-
-  } else {
-
-    // ✅ USER: hanya dirinya sendiri
-    const idUser = String(this.userLogin.id)
-
+  //ADMIN = semua user
+  this.users.forEach(u => {
     datasets.push({
-      label: "Masuk",
+      label: u.nama + " (Masuk)",
       data: labels.map(t => map[t]?.[idUser]?.masuk || 0),
       borderColor: "#27ae60",
       fill: false
     })
 
     datasets.push({
-      label: "Keluar",
+      label: this.userLogin.role === "admin"? u.nama + " (Masuk)": "Masuk",
       data: labels.map(t => map[t]?.[idUser]?.keluar || 0),
       borderColor: "#e67e22",
       borderDash: [5,5],
       fill: false
     })
-  }
+  })
+
+} else {
+
+  //USER = hanya dirinya sendiri
+  const idUser = String (this.userLogin.id)
+
+  datasets.push({
+    label: "Masuk",
+    data: labels.map(t => map[t]?.[idUser]?.masuk || 0),
+    borderColor: "#27ae60",
+    fill: false
+  })
+
+  datasets.push({
+    label: "Keluar",
+    data: labels.map(t => map[t]?.[idUser]?.keluar || 0),
+    borderColor: "#e67e22",
+    borderDash: [5,5],
+    fill: false
+  })
+}
 
   this.chartHarian = new Chart(ctx, {
     type: 'line',
@@ -873,20 +875,16 @@ doc.text("User: " + namaUser, 14, 10)
 
   watch: {
   nama(val) {
-
-    //paksa user selalu pakai ID sendiri
     if (this.userLogin?.role === "user") {
       this.nama = String(this.userLogin.id)
-      return //biar gak lanjut ke bawah
+      return
     }
 
-    //admin
     if (val && this.userLogin?.role === "admin") {
       this.getRiwayat()
       this.cekSaldo()
     }
-  }
-},
+  },
 
   page(val) {
     if (val === "dashboard") {
@@ -906,9 +904,9 @@ doc.text("User: " + namaUser, 14, 10)
   modeChart() {
     this.renderChartHarian()
   }
-})
+}
 
-.mount("#app")
+}).mount("#app")
 </script>
 
 </body>
