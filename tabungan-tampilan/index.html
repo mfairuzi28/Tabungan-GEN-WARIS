@@ -256,12 +256,17 @@ td button{
     <div class="main">
 
       <!-- DASHBOARD -->
-      <div v-show="page==='dashboard'">
+      <div v-if="page==='dashboard'">
         <h1>
           {{ userLogin.role === 'admin'
-              ? 'Dashboard Semua User'
+              ? 'Dashboard'
               : 'Dashboard Saya' }}
         </h1>
+
+        <select v-if="userLogin.role==='admin'" v-model="modeView">
+          <option value="semua">Semua User</option>
+          <option value="peruser">Per User</option>
+        </select>
 
         <p v-if="userLogin.role === 'user'">
           Data milik: <b>{{ userLogin.nama }}</b>
@@ -411,6 +416,7 @@ const API = "https://tabungan-api.fairuzim934.workers.dev"
 Vue.createApp({
   data() {
     return {
+      modeView: "semua",
       loginUsername: "",
       loginPassword: "",
       userLogin: null,
@@ -552,34 +558,38 @@ try {
       this.saldo = data.saldo
     },
 
-    async getRiwayat() {
-      const res = await fetch(API + "/riwayat/" + this.nama)
-      this.riwayat = await res.json()
+async getRiwayat() {
+  const res = await fetch(API + "/riwayat/" + this.nama)
+  this.riwayat = await res.json()
 
-      console.log("DATA RIWAYAT:", this.riwayat)
+  console.log("DATA RIWAYAT:", this.riwayat)
 
-      this.totalMasuk = 0
-      this.totalKeluar = 0
+  this.totalMasuk = 0
+  this.totalKeluar = 0
 
-      this.riwayat.forEach(r => {
+  this.riwayat.forEach(r => {
 
-        r.user_id = this.nama
+    if (r.tipe === "masuk") {
+      this.totalMasuk += Number(r.jumlah)
+    } else if (r.tipe === "keluar") {
+      this.totalKeluar += Number(r.jumlah)
+    }
 
-        if (this.userLogin.role === "user") {
-          if (String(r.user_id) !== String(this.userLogin.id)) return
-        }
+  })
 
-        if (r.tipe === "masuk") this.totalMasuk += Number(r.jumlah)
-        else this.totalKeluar += Number(r.jumlah)
-      })
+  this.saldo = this.totalMasuk - this.totalKeluar
 
-      this.$nextTick(() => {
-  this.renderChartHarian()
-})
-    },
+  this.$nextTick(() => {
+    this.renderChartHarian()
+  })
+},
 
   async getSemuaRiwayat() {
   await this.getUsers()
+
+  this.$nextTick(() => {
+  this.renderChartHarian()
+})
 
   let all = []
 
@@ -641,11 +651,14 @@ try {
     },
 
 renderChartHarian() {
-  if (!this.riwayat.length) return
-  if (this.userLogin.role === "admin" && !this.users.length) return
+if (this.page !== 'dashboard') return
+if (!this.riwayat.length) return
 
-  const ctx = document.getElementById('chartHarian')
-  if (!ctx) return
+const canvas = document.getElementById('chartHarian')
+if (!canvas) return
+
+const ctx = canvas.getContext('2d')
+if (!ctx) return
 
   if (this.chartHarian) this.chartHarian.destroy()
 
@@ -653,9 +666,6 @@ renderChartHarian() {
 
   this.riwayat.forEach(r => {
 
-    if (this.userLogin.role === "user") {
-      if (String(r.user_id) !== String(this.userLogin.id)) return
-    }
     const d = new Date(r.created_at)
     let key = ""
 
@@ -677,7 +687,20 @@ if (this.modeChart === "harian") {
 
     if (!map[key]) map[key] = {}
 
-    const uid = String(r.user_id)
+ let uid
+
+  // USER LOGIN
+  if (this.userLogin.role === "user") {
+    uid = String(this.userLogin.id)
+
+  // ADMIN PER USER
+  } else if (this.modeView === "peruser" && this.nama) {
+    uid = String(this.nama)
+
+  // ADMIN SEMUA USER
+  } else {
+    uid = String(r.user_id)
+  }
 
     if (!map[key][uid]) {
       map[key][uid] = { masuk: 0, keluar: 0 }
@@ -692,36 +715,17 @@ if (this.modeChart === "harian") {
 
   console.log("MAP FINAL:", map)
   const labels = Object.keys(map).sort()
+  if (!labels.length) {
+    console.log("Chart kosong")
+    return
+  }
   const datasets = []
   const colors = ["red","blue","green","purple","orange","brown","black"]
 
   if (this.userLogin.role === "admin") {
 
-    this.users.forEach((u, i) => {
-      const id = String(u.id)
-
-      // MASUK
-      datasets.push({
-        label: u.nama + " (Masuk)",
-        data: labels.map(t => map[t]?.[id]?.masuk || 0),
-        borderColor: colors[i % colors.length],
-        backgroundColor: "transparent",
-        tension: 0.4
-      })
-
-      // KELUAR
-      datasets.push({
-        label: u.nama + " (Keluar)",
-        data: labels.map(t => map[t]?.[id]?.keluar || 0),
-        borderColor: colors[i % colors.length],
-        borderDash: [6,4],
-        backgroundColor: "transparent",
-        tension: 0.4
-      })
-    })
-
-  } else {
-    const id = String(this.userLogin.id)
+  if (this.modeView === "peruser" && this.nama) {
+    const id = String(this.nama)
 
     datasets.push({
       label: "Masuk",
@@ -737,7 +741,47 @@ if (this.modeChart === "harian") {
       borderDash: [6,4],
       tension: 0.4
     })
+
+  } else {
+    this.users.forEach((u, i) => {
+      const id = String(u.id)
+
+      datasets.push({
+        label: u.nama + " (Masuk)",
+        data: labels.map(t => map[t]?.[id]?.masuk || 0),
+        borderColor: colors[i % colors.length],
+        tension: 0.4
+      })
+
+      datasets.push({
+        label: u.nama + " (Keluar)",
+        data: labels.map(t => map[t]?.[id]?.keluar || 0),
+        borderColor: colors[i % colors.length],
+        borderDash: [6,4],
+        tension: 0.4
+      })
+    })
   }
+
+} else {
+  // user biasa
+  const id = String(this.userLogin.id)
+
+  datasets.push({
+    label: "Masuk",
+    data: labels.map(t => map[t]?.[id]?.masuk || 0),
+    borderColor: "green",
+    tension: 0.4
+  })
+
+  datasets.push({
+    label: "Keluar",
+    data: labels.map(t => map[t]?.[id]?.keluar || 0),
+    borderColor: "orange",
+    borderDash: [6,4],
+    tension: 0.4
+  })
+}
 
   this.chartHarian = new Chart(ctx, {
     type: 'line',
@@ -806,10 +850,7 @@ if (this.modeChart === "harian") {
     async getUsers() {
       const res = await fetch(API + "/users")
       this.users = await res.json()
-      this.$nextTick(() => {
-       this.renderChartHarian()
-     })
-
+      
      console.log("USERS:", this.users)
     },
 
@@ -936,26 +977,45 @@ if (this.modeChart === "harian") {
   this.getUsers()
 },
 
-  watch: {
+ watch: {
   nama(val) {
     if (this.userLogin?.role === "user") {
       this.nama = String(this.userLogin.id)
       return
     }
 
-    if (val && this.userLogin?.role === "admin") {
-      this.getRiwayat()
-      this.cekSaldo()
+    if (this.userLogin?.role === "admin") {
+      if (this.modeView === "peruser" && val) {
+        this.getRiwayat()
+        this.cekSaldo()
+
+        this.$nextTick(() => {
+         this.renderChartHarian()
+        })
+      }
     }
   },
 
   page(val) {
+    if (this.chartHarian) {
+    this.chartHarian.destroy()
+    this.chartHarian = null
+  }
+
     if (val === "dashboard") {
+      this.$nextTick(() => {
+        this.renderChartHarian()
+      })
 
       this.filterBulan = ""
 
       if (this.userLogin?.role === "admin") {
-        this.getSemuaRiwayat()
+        if (this.modeView === "peruser" && this.nama) {
+          this.getRiwayat()
+          this.cekSaldo()
+        } else {
+          this.getSemuaRiwayat()
+        }
       } else {
         this.getRiwayat()
         this.cekSaldo()
@@ -970,6 +1030,31 @@ if (this.modeChart === "harian") {
   modeChart() {
     this.renderChartHarian()
   },
+
+  modeView(val) {
+
+  // reset chart
+  if (this.chartHarian) {
+    this.chartHarian.destroy()
+    this.chartHarian = null
+  }
+
+  if (this.userLogin?.role === "admin") {
+
+    if (val === "peruser") {
+      this.totalMasuk = 0
+      this.totalKeluar = 0
+    }
+
+    if (val === "peruser" && this.nama) {
+      this.getRiwayat()
+      this.cekSaldo()
+    } else {
+      this.nama = ""
+      this.getSemuaRiwayat()
+    }
+  }
+}
 }
 
 }).mount("#app")
