@@ -233,7 +233,7 @@ td button{
 
   <!-- LOGIN -->
   <div v-if="!userLogin" style="max-width:300px;margin:auto;margin-top:100px;background:white;padding:20px;border-radius:10px;">
-    <h3>Login</h3>
+    <h3 style="text-align: center;">Tabungan Gen-Waris</h3>
     <input v-model="loginUsername" placeholder="Username">
     <input v-model="loginPassword" type="password" placeholder="Password">
     <button @click="login(loginUsername, loginPassword)">Login</button>
@@ -294,7 +294,7 @@ td button{
 
         <div>
           <p v-if="!riwayat.length">Data Belum Ada</p>
-          <canvas v-else id="chartHarian"></canvas>
+          <canvas v-else id="chartHarian" style="background:white; border-radius:10px;"></canvas>
         </div>
       </div>
 
@@ -339,13 +339,28 @@ td button{
             <th>Jumlah</th>
             <th>Keterangan</th>
             <th>Tanggal</th>
+            <th v-if="userLogin?.role === 'admin'">Aksi</th>
           </tr>
 
           <tr v-for="r in riwayat" :key="r.id">
             <td>{{ r.tipe }}</td>
-            <td>{{ r.jumlah }}</td>
-            <td>{{ r.keterangan }}</td>
+            <!-- JUMLAH -->
+          <td v-if="String(editId) !== String(r.id)">{{ r.jumlah }}</td>
+          <td v-else>
+            <input v-model="editJumlah">
+          </td>
+
+             <!-- KETERANGAN -->
+           <td v-if="String(editId) !== String(r.id)">{{ r.keterangan }}</td>
+           <td v-else>
+           <input v-model="editKeterangan">
+           </td>
             <td>{{ formatTanggal(r.created_at) }}</td>
+            <td v-if="userLogin?.role === 'admin'">
+               <button v-if="String(editId) !== String(r.id)" @click="editTransaksi(r)">✏️</button>
+               <button v-if="editId === r.id" @click="simpanEdit(r)">💾</button>
+               <button @click="hapus(r.id)">🗑️</button>
+            </td>
           </tr>
         </table>
 
@@ -547,6 +562,13 @@ try {
       this.totalKeluar = 0
 
       this.riwayat.forEach(r => {
+
+        r.user_id = this.nama
+
+        if (this.userLogin.role === "user") {
+          if (String(r.user_id) !== String(this.userLogin.id)) return
+        }
+
         if (r.tipe === "masuk") this.totalMasuk += Number(r.jumlah)
         else this.totalKeluar += Number(r.jumlah)
       })
@@ -556,25 +578,40 @@ try {
 })
     },
 
-    async getSemuaRiwayat() {
-      await this.getUsers()
+  async getSemuaRiwayat() {
+  await this.getUsers()
 
-  const res = await fetch(API + "/riwayat")
-  this.riwayat = await res.json()
+  let all = []
+
+  for (const u of this.users) {
+    const res = await fetch(API + "/riwayat/" + u.id)
+    const data = await res.json()
+
+    data.forEach(d => {
+      d.user_id = u.id
+    })
+
+    all.push(...data)
+  }
+
+  this.riwayat = all
 
   this.totalMasuk = 0
   this.totalKeluar = 0
 
   this.riwayat.forEach(r => {
-    if (r.tipe === "masuk") this.totalMasuk += Number(r.jumlah)
-    else this.totalKeluar += Number(r.jumlah)
-  })
+  if (r.tipe === "masuk") {
+    this.totalMasuk += Number(r.jumlah)
+  } else if (r.tipe === "keluar") {
+    this.totalKeluar += Number(r.jumlah)
+  }
+})
 
   this.saldo = this.totalMasuk - this.totalKeluar
 
   this.$nextTick(() => {
-  this.renderChartHarian()
-})
+    this.renderChartHarian()
+  })
 },
 
     async hapus(id) {
@@ -604,6 +641,7 @@ try {
     },
 
 renderChartHarian() {
+  if (!this.riwayat.length) return
   if (this.userLogin.role === "admin" && !this.users.length) return
 
   const ctx = document.getElementById('chartHarian')
@@ -614,34 +652,32 @@ renderChartHarian() {
   const map = {}
 
   this.riwayat.forEach(r => {
-    console.log("USER_ID:", r.user_id, "DATA:", r)
 
-    const d = new Date(r.created_at)
-
-    if (this.filterBulan) {
-      const bulan =
-        d.getFullYear() + "-" +
-        String(d.getMonth()+1).padStart(2,"0")
-
-      if (bulan !== this.filterBulan) return
+    if (this.userLogin.role === "user") {
+      if (String(r.user_id) !== String(this.userLogin.id)) return
     }
-
+    const d = new Date(r.created_at)
     let key = ""
 
-    if (this.modeChart === "harian") {
-      key = d.toLocaleDateString("id-ID")
-    } else if (this.modeChart === "mingguan") {
-      const week = Math.ceil(d.getDate() / 7)
-      key = `${d.getFullYear()}-M${d.getMonth()+1}-W${week}`
-    } else if (this.modeChart === "bulanan") {
-      key = `${d.getFullYear()}-${d.getMonth()+1}`
-    } else {
-      key = `${d.getFullYear()}`
-    }
+if (this.modeChart === "harian") {
+  key = d.getFullYear() + "-" +
+        String(d.getMonth()+1).padStart(2,"0") + "-" +
+        String(d.getDate()).padStart(2,"0")
+
+} else if (this.modeChart === "mingguan") {
+  const week = Math.ceil(d.getDate() / 7)
+  key = `${d.getFullYear()}-M${d.getMonth()+1}-W${week}`
+
+} else if (this.modeChart === "bulanan") {
+  key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`
+
+} else if (this.modeChart === "tahunan") {
+  key = `${d.getFullYear()}`
+}
 
     if (!map[key]) map[key] = {}
 
-    const uid = String(r.user_id || r.nama)
+    const uid = String(r.user_id)
 
     if (!map[key][uid]) {
       map[key][uid] = { masuk: 0, keluar: 0 }
@@ -649,51 +685,56 @@ renderChartHarian() {
 
     if (r.tipe === "masuk") {
       map[key][uid].masuk += Number(r.jumlah)
-    } else {
-      map[key][uid].keluar += Number(r.jumlah)
-    }
+    } else if (r.tipe === "keluar") {
+  map[key][uid].keluar += Number(r.jumlah)
+}
   })
 
+  console.log("MAP FINAL:", map)
   const labels = Object.keys(map).sort()
-
-  if (!labels.length) return
-
   const datasets = []
+  const colors = ["red","blue","green","purple","orange","brown","black"]
 
   if (this.userLogin.role === "admin") {
-    this.users.forEach(u => {
+
+    this.users.forEach((u, i) => {
       const id = String(u.id)
 
+      // MASUK
       datasets.push({
         label: u.nama + " (Masuk)",
         data: labels.map(t => map[t]?.[id]?.masuk || 0),
-        borderColor: "#27ae60",
+        borderColor: colors[i % colors.length],
+        backgroundColor: "transparent",
         tension: 0.4
       })
 
+      // KELUAR
       datasets.push({
         label: u.nama + " (Keluar)",
         data: labels.map(t => map[t]?.[id]?.keluar || 0),
-        borderColor: "#e67e22",
-        borderDash: [5,5],
+        borderColor: colors[i % colors.length],
+        borderDash: [6,4],
+        backgroundColor: "transparent",
         tension: 0.4
       })
     })
+
   } else {
     const id = String(this.userLogin.id)
 
     datasets.push({
       label: "Masuk",
       data: labels.map(t => map[t]?.[id]?.masuk || 0),
-      borderColor: "#27ae60",
+      borderColor: "green",
       tension: 0.4
     })
 
     datasets.push({
       label: "Keluar",
       data: labels.map(t => map[t]?.[id]?.keluar || 0),
-      borderColor: "#e67e22",
-      borderDash: [5,5],
+      borderColor: "orange",
+      borderDash: [6,4],
       tension: 0.4
     })
   }
@@ -702,15 +743,23 @@ renderChartHarian() {
     type: 'line',
     data: { labels, datasets },
     options: {
-      responsive: true,
-      animation: false,
-      plugins: {
-        legend: { position: 'bottom' }
-      },
-      scales: {
-        y: { beginAtZero: true }
+  responsive: true,
+  plugins: {
+    legend: { position: 'bottom' }
+  },
+  scales: {
+    x: {
+      ticks: { color: "black" }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        color: "black",
+        callback: v => "Rp " + v
       }
     }
+  }
+}
   })
 },
 
@@ -748,6 +797,7 @@ renderChartHarian() {
     },
 
     editTransaksi(item) {
+      console.log("EDIT DIKLIK", item)
       this.editId = item.id
       this.editJumlah = item.jumlah
       this.editKeterangan = item.keterangan || ""
@@ -759,6 +809,8 @@ renderChartHarian() {
       this.$nextTick(() => {
        this.renderChartHarian()
      })
+
+     console.log("USERS:", this.users)
     },
 
     async tambahUser() {
@@ -805,9 +857,9 @@ renderChartHarian() {
   // Judul
   doc.text("Laporan Transaksi", 14, 18)
   const user = this.users.find(u => String(u.id) === this.nama)
-const namaUser = user ? user.nama : this.nama
+  const namaUser = user ? user.nama : this.nama
 
-doc.text("User: " + namaUser, 14, 10)
+  doc.text("User: " + namaUser, 14, 10)
 
   // Data tabel
   const rows = this.riwayat.map((r, i) => [
