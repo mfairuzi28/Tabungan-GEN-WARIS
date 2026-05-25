@@ -176,6 +176,18 @@ button {
   background: #2980b9;
 }
 
+.btn-login {
+  background: #3498db;
+  color: white;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.btn-login:hover {
+  background: #2980b9;
+}
+
 /* TABLE */
 table {
   width: 100%;
@@ -236,7 +248,7 @@ td button{
     <h3 style="text-align: center;">Tabungan Gen-Waris</h3>
     <input v-model="loginUsername" placeholder="Username">
     <input v-model="loginPassword" type="password" placeholder="Password">
-    <button @click="login(loginUsername, loginPassword)">Login</button>
+    <button class="btn-login" @click="login(loginUsername, loginPassword)">Login</button>
   </div>
 
   <!-- APP -->
@@ -260,7 +272,7 @@ td button{
         <h1>
           {{ userLogin.role === 'admin'
               ? 'Dashboard'
-              : 'Dashboard Saya' }}
+              : 'Dashboard' }}
         </h1>
 
         <select v-if="userLogin.role==='admin'" v-model="modeView">
@@ -289,7 +301,6 @@ td button{
           </div>
         </div>
 
-        <input type="month" v-model="filterBulan">
         <select v-model="modeChart">
           <option value="harian">Harian</option>
           <option value="mingguan">Mingguan</option>
@@ -308,13 +319,13 @@ td button{
         <h1>User</h1>
 
         <input v-model="namaBaru" placeholder="Nama user">
-        <button @click="tambahUser">Tambah</button>
+        <button class="btn-tambah" @click="tambahUser">Tambah</button>
 
         <ul>
           <li v-for="u in users" :key="u.id">
             <input v-model="u.nama">
-            <button @click="updateUser(u)">💾</button>
-            <button @click="hapusUser(u.id)">🗑️</button>
+            <button class="btn-simpan" @click="updateUser(u)">💾</button>
+            <button class="btn-hapus" @click="hapusUser(u.id)">🗑️</button>
           </li>
         </ul>
       </div>
@@ -335,8 +346,8 @@ td button{
         <input v-model="jumlah" placeholder="Jumlah">
         <input v-model="keterangan" placeholder="Keterangan">
 
-        <button v-if="userLogin?.role==='admin'" @click="tabung">Tabung</button>
-        <button v-if="userLogin?.role==='admin'" @click="tarik">Tarik</button>
+        <button class="btn-tabung" v-if="userLogin?.role==='admin'" @click="tabung">Tabung</button>
+        <button class="btn-tarik" v-if="userLogin?.role==='admin'" @click="tarik">Tarik</button>
 
         <table v-if="riwayat.length">
           <tr>
@@ -362,9 +373,9 @@ td button{
            </td>
             <td>{{ formatTanggal(r.created_at) }}</td>
             <td v-if="userLogin?.role === 'admin'">
-               <button v-if="String(editId) !== String(r.id)" @click="editTransaksi(r)">✏️</button>
-               <button v-if="editId === r.id" @click="simpanEdit(r)">💾</button>
-               <button @click="hapus(r.id)">🗑️</button>
+               <button class="btn-edit" v-if="String(editId) !== String(r.id)" @click="editTransaksi(r)">✏️</button>
+               <button class="btn-simpan" v-if="editId === r.id" @click="simpanEdit(r)">💾</button>
+               <button class="btn-hapus" @click="hapus(r.id)">🗑️</button>
             </td>
           </tr>
         </table>
@@ -383,7 +394,7 @@ td button{
           </option>
         </select>
 
-        <button @click="downloadPDF">Download PDF</button>
+        <button class="btn-download" @click="downloadPDF">Download Laporan</button>
 
         <table v-if="riwayat.length">
           <tr>
@@ -434,8 +445,7 @@ Vue.createApp({
       keterangan: "",
       totalMasuk: 0,
       totalKeluar: 0,
-      modeChart: "harian",
-      filterBulan: ""
+      modeChart: "harian"
     }
   },
 
@@ -481,6 +491,17 @@ Vue.createApp({
 logout() {
   localStorage.removeItem("user")
   this.userLogin = null
+
+  this.nama = ""
+  this.riwayat = []
+  this.totalMasuk = 0
+  this.totalKeluar = 0
+  this.saldo = 0
+
+  if (this.chartHarian) {
+    this.chartHarian.destroy()
+    this.chartHarian = null
+  }
 },
 
     async tabung() {
@@ -897,8 +918,14 @@ if (this.modeChart === "harian") {
 
   // Judul
   doc.text("Laporan Transaksi", 14, 18)
-  const user = this.users.find(u => String(u.id) === this.nama)
-  const namaUser = user ? user.nama : this.nama
+  let namaUser = ""
+
+if (this.userLogin.role === "user") {
+  namaUser = this.userLogin.nama
+} else {
+  const user = this.users.find(u => String(u.id) === String(this.nama))
+  namaUser = user ? user.nama : "-"
+}
 
   doc.text("User: " + namaUser, 14, 10)
 
@@ -955,21 +982,24 @@ if (this.modeChart === "harian") {
     }
   },
 
- mounted() {
+mounted() {
   const user = localStorage.getItem("user")
 
   if (user) {
-    this.userLogin = JSON.parse(user)
+    try {
+      this.userLogin = JSON.parse(user)
+    } catch {
+      localStorage.removeItem("user")
+      this.userLogin = null
+    }
+  }
 
+  if (this.userLogin) {
     if (this.userLogin.role === "user") {
-      // user
       this.nama = String(this.userLogin.id)
-
       this.getRiwayat()
       this.cekSaldo()
-
     } else {
-      // admin
       this.getSemuaRiwayat()
     }
   }
@@ -1021,10 +1051,6 @@ if (this.modeChart === "harian") {
         this.cekSaldo()
       }
     }
-  },
-
-  filterBulan() {
-    this.renderChartHarian()
   },
 
   modeChart() {
