@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import bcrypt from "bcryptjs"
 
 type Bindings = {
   DB: D1Database
@@ -17,29 +18,28 @@ app.use('*', cors({
 app.post('/login', async (c) => {
   const { username, password } = await c.req.json()
 
-  // ADMIN
-  if (username === "admin" && password === "1234") {
-    return c.json({
-      role: "admin",
-      nama: "admin"
-    })
-  }
-
-  // USER
   const user = await c.env.DB.prepare(
-    "SELECT * FROM users WHERE nama = ?"
+    "SELECT * FROM users WHERE username = ?"
   ).bind(username).first()
 
   if (!user) {
     return c.json({ error: "User tidak ditemukan" }, 404)
   }
 
-  if (String(user.id) !== String(password)) {
+  console.log("INPUT:", password)
+  console.log("DB:", user.password)
+
+  const cocok = await bcrypt.compare(
+    password,
+    String(user.password)
+  )
+
+  if (!cocok) {
     return c.json({ error: "Password salah" }, 401)
   }
 
   return c.json({
-    role: "user",
+    role: user.role,
     nama: user.nama,
     id: user.id
   })
@@ -67,23 +67,20 @@ app.get('/users', async (c) => {
 
 //POST user
 app.post('/users', async (c) => {
-  try {
-    const body = await c.req.json()
-    const nama = body.nama
+  const { nama, username, password, role } = await c.req.json()
 
-    if (!nama) {
-      return c.json({ error: 'Nama kosong' }, 400)
-    }
+  const hash = await bcrypt.hash(password, 10)
 
-    await c.env.DB.prepare(
-      "INSERT INTO users (nama) VALUES (?)"
-    ).bind(nama).run()
+  await c.env.DB.prepare(
+    "INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)"
+  ).bind(
+    nama,
+    username,
+    hash,
+    role || "user"
+  ).run()
 
-    return c.json({ message: 'User ditambahkan' })
-
-  } catch {
-    return c.json({ error: "Server error" }, 500)
-  }
+  return c.json({ message: "User berhasil ditambahkan" })
 })
 
 //PUT user
