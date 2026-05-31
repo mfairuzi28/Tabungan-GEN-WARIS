@@ -375,7 +375,7 @@ td button{
             <td v-if="userLogin?.role === 'admin'">
                <button class="btn-edit" v-if="String(editId) !== String(r.id)" @click="editTransaksi(r)">✏️</button>
                <button class="btn-simpan" v-if="editId === r.id" @click="simpanEdit(r)">💾</button>
-               <button class="btn-hapus" @click="hapus(r.id)">🗑️</button>
+               <button v-if="u.role !== 'admin'" class="btn-hapus" @click="hapus(r.id)">🗑️</button>
             </td>
           </tr>
         </table>
