@@ -244,19 +244,44 @@ td button{
 <div id="app">
 
   <!-- LOGIN -->
-  <div v-if="!userLogin" style="max-width:300px;margin:auto;margin-top:100px;background:white;padding:20px;border-radius:10px;">
-    <h3 style="text-align: center;">Tabungan Gen-Waris</h3>
+  <div
+  v-if="!userLogin"
+  style="
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  "
+>
+  <div
+    style="
+      width: 350px;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+    "
+  >
+    <h3 style="text-align:center">Kas Gen-Waris</h3>
+
     <input v-model="loginUsername" placeholder="Username">
     <input v-model="loginPassword" type="password" placeholder="Password">
-    <button class="btn-login" @click="login(loginUsername, loginPassword)">Login</button>
+
+    <button
+      class="btn-login"
+      @click="login(loginUsername, loginPassword)"
+    >
+      Login
+    </button>
   </div>
+</div>
 
   <!-- APP -->
   <div v-if="userLogin" class="layout">
 
     <!-- SIDEBAR -->
     <div class="sidebar">
-      <h2>Tabungan</h2>
+      <h2>Kas Gen-Waris</h2>
       <button @click="page='dashboard'">Dashboard</button>
       <button v-if="userLogin?.role==='admin'" @click="page='user'">User</button>
       <button @click="page='transaksi'">Transaksi</button>
