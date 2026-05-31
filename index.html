@@ -350,7 +350,7 @@ td button{
           <li v-for="u in users" :key="u.id">
             <input v-model="u.nama">
             <button class="btn-simpan" @click="updateUser(u)">💾</button>
-            <button class="btn-hapus" @click="hapusUser(u.id)">🗑️</button>
+            <button v-if="u.role !== 'admin'" class="btn-hapus" @click="hapusUser(u.id)">🗑️</button>
           </li>
         </ul>
       </div>
