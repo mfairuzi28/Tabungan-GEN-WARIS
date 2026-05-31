@@ -26,13 +26,16 @@ app.post('/login', async (c) => {
     return c.json({ error: "User tidak ditemukan" }, 404)
   }
 
+  console.log("USERNAME:", username)
   console.log("INPUT:", password)
-  console.log("DB:", user.password)
+  console.log("HASH DB:", user.password)
 
   const cocok = await bcrypt.compare(
-    password,
-    String(user.password)
-  )
+  password,
+  String(user.password)
+ )
+
+  console.log("COCOK:", cocok)
 
   if (!cocok) {
     return c.json({ error: "Password salah" }, 401)
@@ -105,6 +108,14 @@ app.put('/users/:id', async (c) => {
 app.delete('/users/:id', async (c) => {
   try {
     const id = Number(c.req.param('id'))
+
+    const user = await c.env.DB.prepare(
+      "SELECT role FROM users WHERE id = ?"
+    ).bind(id).first()
+
+    if (user?.role === "admin") {
+      return c.json({ error: "Admin tidak boleh dihapus" }, 403)
+    }
 
     await c.env.DB.prepare(
       "DELETE FROM users WHERE id = ?"
