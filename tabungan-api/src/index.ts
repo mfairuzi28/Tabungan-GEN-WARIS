@@ -106,26 +106,23 @@ app.put('/users/:id', async (c) => {
 
 //DELETE user
 app.delete('/users/:id', async (c) => {
-  try {
-    const id = Number(c.req.param('id'))
+  const id = c.req.param('id')
 
-    const user = await c.env.DB.prepare(
-      "SELECT role FROM users WHERE id = ?"
-    ).bind(id).first()
+  const user = await c.env.DB.prepare(
+    "SELECT role FROM users WHERE id = ?"
+  ).bind(id).first()
 
-    if (user?.role === "admin") {
-      return c.json({ error: "Admin tidak boleh dihapus" }, 403)
-    }
-
-    await c.env.DB.prepare(
-      "DELETE FROM users WHERE id = ?"
-    ).bind(id).run()
-
-    return c.json({ message: 'User dihapus' })
-
-  } catch {
-    return c.json({ error: "Server error" }, 500)
+  if (user?.role === "admin") {
+    return c.json({
+      error: "Admin tidak boleh dihapus"
+    }, 403)
   }
+
+  await c.env.DB.prepare(
+    "DELETE FROM users WHERE id = ?"
+  ).bind(id).run()
+
+  return c.json({ success: true })
 })
 
 /* ================= TRANSAKSI ================= */
