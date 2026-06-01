@@ -268,7 +268,6 @@ td button{
     <input v-model="loginPassword" type="password" placeholder="Password">
 
     <button class="btn-login" @click="login(loginUsername, loginPassword)">Login</button>
-    <button v-if="userLogin.role==='admin'" @click="resetPassword(u.id)">Reset Password</button>
   </div>
 </div>
 
@@ -345,6 +344,7 @@ td button{
         <ul>
           <li v-for="u in users" :key="u.id">
             <input v-model="u.nama">
+            <button v-if="userLogin?.role === 'admin'" @click="resetPassword(u.id)">Reset Password</button>
             <button class="btn-simpan" @click="updateUser(u)">💾</button>
             <button v-if="userLogin?.role === 'admin'" class="btn-hapus" @click="hapusUser(u.id)">🗑️</button>
           </li>
