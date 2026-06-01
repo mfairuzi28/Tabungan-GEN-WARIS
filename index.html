@@ -267,12 +267,8 @@ td button{
     <input v-model="loginUsername" placeholder="Username">
     <input v-model="loginPassword" type="password" placeholder="Password">
 
-    <button
-      class="btn-login"
-      @click="login(loginUsername, loginPassword)"
-    >
-      Login
-    </button>
+    <button class="btn-login" @click="login(loginUsername, loginPassword)">Login</button>
+    <button v-if="userLogin.role==='admin'" @click="resetPassword(u.id)">Reset Password</button>
   </div>
 </div>
 
@@ -350,7 +346,7 @@ td button{
           <li v-for="u in users" :key="u.id">
             <input v-model="u.nama">
             <button class="btn-simpan" @click="updateUser(u)">💾</button>
-            <button v-if="u.role !== 'admin'" class="btn-hapus" @click="hapusUser(u.id)">🗑️</button>
+            <button v-if="userLogin?.role === 'admin'" class="btn-hapus" @click="hapusUser(u.id)">🗑️</button>
           </li>
         </ul>
       </div>
@@ -360,11 +356,11 @@ td button{
         <h1>Transaksi</h1>
 
         <select v-if="userLogin?.role==='admin'" v-model="nama">
-          <option disabled value="">-- Pilih User --</option>
-          <option v-for="u in users" :value="String(u.id)">
-            {{ u.nama }}
-          </option>
-        </select>
+  <option disabled value="">-- Pilih User --</option>
+  <option v-for="u in users" :key="u.id" :value="String(u.id)">
+    {{ u.nama }}
+  </option>
+</select>
 
         <input v-else :value="userLogin?.nama" disabled>
 
@@ -400,7 +396,7 @@ td button{
             <td v-if="userLogin?.role === 'admin'">
                <button class="btn-edit" v-if="String(editId) !== String(r.id)" @click="editTransaksi(r)">✏️</button>
                <button class="btn-simpan" v-if="editId === r.id" @click="simpanEdit(r)">💾</button>
-               <button v-if="u.role !== 'admin'" class="btn-hapus" @click="hapus(r.id)">🗑️</button>
+               <button v-if="userLogin?.role === 'admin'" class="btn-hapus" @click="hapus(r.id)">🗑️</button>
             </td>
           </tr>
         </table>
@@ -527,6 +523,28 @@ logout() {
     this.chartHarian.destroy()
     this.chartHarian = null
   }
+},
+
+async resetPassword(id) {
+  const password = prompt("Password baru")
+
+  if (!password) return
+
+  const res = await fetch(
+    API + "/reset-password/" + id,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        password
+      })
+    }
+  )
+
+  const data = await res.json()
+  alert(data.message)
 },
 
     async tabung() {
@@ -1009,23 +1027,26 @@ if (this.userLogin.role === "user") {
 
 mounted() {
   const user = localStorage.getItem("user")
+  const selectedUser = localStorage.getItem("selectedUser")
 
   if (user) {
-    try {
-      this.userLogin = JSON.parse(user)
-    } catch {
-      localStorage.removeItem("user")
-      this.userLogin = null
-    }
-  }
+    this.userLogin = JSON.parse(user)
 
-  if (this.userLogin) {
+    if (selectedUser) {
+      this.nama = selectedUser
+    }
+
     if (this.userLogin.role === "user") {
       this.nama = String(this.userLogin.id)
       this.getRiwayat()
       this.cekSaldo()
     } else {
-      this.getSemuaRiwayat()
+      if (this.nama) {
+        this.getRiwayat()
+        this.cekSaldo()
+      } else {
+        this.getSemuaRiwayat()
+      }
     }
   }
 
@@ -1034,6 +1055,11 @@ mounted() {
 
  watch: {
   nama(val) {
+    if (this.page === "transaksi" && val) {
+      this.getRiwayat()
+      return
+    }
+
     if (this.userLogin?.role === "user") {
       this.nama = String(this.userLogin.id)
       return
@@ -1055,6 +1081,14 @@ mounted() {
     if (this.chartHarian) {
     this.chartHarian.destroy()
     this.chartHarian = null
+  }
+
+  if (val === "transaksi") {
+
+    if (this.userLogin?.role === "user") {
+      this.nama = String(this.userLogin.id)
+      this.getRiwayat()
+    }
   }
 
     if (val === "dashboard") {

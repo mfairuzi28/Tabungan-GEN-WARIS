@@ -48,6 +48,21 @@ app.post('/login', async (c) => {
   })
 })
 
+app.put('/reset-password/:id', async (c) => {
+  const id = c.req.param('id')
+  const { password } = await c.req.json()
+
+  const hash = await bcrypt.hash(password, 10)
+
+  await c.env.DB.prepare(
+    "UPDATE users SET password = ? WHERE id = ?"
+  ).bind(hash, id).run()
+
+  return c.json({
+    message: "Password berhasil direset"
+  })
+})
+
 app.get('/', (c) => {
   return c.text('API jalan')
 })
