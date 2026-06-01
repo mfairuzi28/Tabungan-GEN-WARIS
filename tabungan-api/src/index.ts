@@ -78,8 +78,12 @@ app.get('/users', async (c) => {
 
     return c.json(result.results)
 
-  } catch {
-    return c.json({ error: "Server error" }, 500)
+  } catch (err) {
+    console.log("ERROR:", err)
+
+    return c.json({
+      error: String(err)
+    }, 500)
   }
 })
 
