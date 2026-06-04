@@ -273,6 +273,83 @@ app.put('/transaksi/:id', async (c) => {
   }
 })
 
+/* ================= Komentar/Pesan ================= */
+
+//Menulis Pesan
+app.post("/chat", async (c) => {
+
+  const body = await c.req.json()
+
+  await c.env.DB.prepare(`
+    INSERT INTO chat (
+      user_id,
+      pengirim,
+      pesan
+    )
+    VALUES (?, ?, ?)
+  `)
+  .bind(
+    body.user_id,
+    body.pengirim,
+    body.pesan
+  )
+  .run()
+
+  return c.json({
+    success: true
+  })
+})
+
+//Membaca Pesan
+app.get("/chat/:id", async (c) => {
+
+  const id = c.req.param("id")
+
+  const { results } = await c.env.DB.prepare(`
+    SELECT
+      c.*,
+      u.nama
+    FROM chat c
+    LEFT JOIN users u
+      ON u.id = c.user_id
+    WHERE c.user_id = ?
+    ORDER BY c.created_at ASC
+  `)
+  .bind(id)
+  .all()
+
+  return c.json(results)
+})
+
+//edit dan hapus pesan
+app.put("/chat/:id", async (c) => {
+  const id = c.req.param("id")
+  const body = await c.req.json()
+
+  await c.env.DB.prepare(`
+    UPDATE chat
+    SET pesan = ?
+    WHERE id = ?
+  `)
+  .bind(body.pesan, id)
+  .run()
+
+  return c.json({ success: true })
+})
+
+app.delete("/chat/:id", async (c) => {
+  const id = c.req.param("id")
+
+  await c.env.DB.prepare(`
+    DELETE FROM chat
+    WHERE id = ?
+  `)
+  .bind(id)
+  .run()
+
+  return c.json({ success: true })
+})
+
 export default {
   fetch: app.fetch
 }

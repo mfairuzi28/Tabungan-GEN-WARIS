@@ -117,6 +117,14 @@ input, select {
   border: none;
 }
 
+input::placeholder {
+  color: rgba(255,255,255,0.8);
+}
+
+input {
+  color: white;
+}
+
 button {
   padding: 10px;
   margin-top: 5px;
@@ -265,17 +273,37 @@ td button{
   "
 >
   <div
-    style="
-      width: 350px;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-    "
-  >
-    <h3 style="text-align:center">Kas Gen-Waris</h3>
+  style="
+    width: 350px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 25px;
+    border-radius: 15px;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+  "
+>
+    <h3 style="text-align:center;color:white">Kas Gen-Waris</h3>
 
-    <input v-model="loginUsername" placeholder="Username">
-    <input v-model="loginPassword" type="password" placeholder="Password">
+    <input
+  v-model="loginUsername"
+  placeholder="Username"
+  style="
+    background: rgba(255,255,255,0.2);
+    color: white;
+  "
+>
+
+<input
+  v-model="loginPassword"
+  type="password"
+  placeholder="Password"
+  style="
+    background: rgba(255,255,255,0.2);
+    color: white;
+  "
+>
 
     <button class="btn-login" @click="login(loginUsername, loginPassword)">Login</button>
   </div>
@@ -291,6 +319,7 @@ td button{
       <button v-if="userLogin?.role==='admin'" @click="page='user'">User</button>
       <button @click="page='transaksi'">Transaksi</button>
       <button @click="page='laporan'">Laporan</button>
+      <button @click="page='chat'">Chat Admin</button>
       <button @click="logout">Logout</button>
     </div>
 
@@ -446,6 +475,46 @@ td button{
         </table>
       </div>
 
+
+     <!-- chat/pesan -->
+    <div v-if="page==='chat'">
+
+  <select
+    v-if="userLogin.role==='admin'"
+    v-model="nama"
+    @change="getChat()"
+  >
+    <option disabled value="">Pilih User</option>
+    <option
+      v-for="u in users"
+      :value="String(u.id)"
+    >
+      {{ u.nama }}
+    </option>
+  </select>
+
+  <div v-for="c in chatList" :key="c.id">
+    <b>{{ c.nama }}</b>
+    ({{ c.pengirim }})
+    : {{ c.pesan }}
+
+    <button class="btn-edit" style="margin-left:10px;" @click="editChat(c)">✏️</button>
+    <button class="btn-hapus" style="margin-left:5px;" @click="hapusChat(c.id)">🗑️</button>
+  </div>
+
+  <input
+    v-model="pesanBaru"
+    placeholder="Tulis pesan..."
+  >
+
+  <button class="btn-login" @click="kirimPesan">
+    Kirim
+  </button>
+
+</div>
+
+</div>
+
     </div>
 
   </div>
@@ -480,7 +549,11 @@ Vue.createApp({
       keterangan: "",
       totalMasuk: 0,
       totalKeluar: 0,
-      modeChart: "harian"
+      modeChart: "harian",
+      chatList: [],
+      editChatId: null,
+      editPesan: "",
+      pesanBaru: ""
     }
   },
 
@@ -913,6 +986,66 @@ console.log("Chart version:", Chart.version)
 })
 },
 
+async getChat() {
+  const id = this.userLogin.role === "admin"
+    ? this.nama
+    : this.userLogin.id
+
+  const res = await fetch(API + "/chat/" + id)
+
+  this.chatList = await res.json()
+
+  console.log("CHAT:", this.chatList)
+},
+
+async kirimPesan() {
+
+  const userId =
+    this.userLogin.role === "admin"
+      ? this.nama
+      : this.userLogin.id
+
+  await fetch(API + "/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      pengirim: this.userLogin.role,
+      pesan: this.pesanBaru
+    })
+  })
+
+  this.pesanBaru = ""
+  await this.getChat()
+},
+
+editChat(c) {
+  const pesanBaru = prompt("Edit pesan", c.pesan)
+  if (!pesanBaru) return
+
+  fetch(API + "/chat/" + c.id, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      pesan: pesanBaru
+    })
+  }).then(() => this.getChat())
+},
+
+async hapusChat(id) {
+  if (!confirm("Hapus pesan?")) return
+
+  await fetch(API + "/chat/" + id, {
+    method: "DELETE"
+  })
+
+  this.getChat()
+},
+
     async simpanEdit(item) {
       if (!this.editJumlah) return alert("Jumlah tidak boleh kosong")
 
@@ -1168,6 +1301,17 @@ mounted() {
         this.cekSaldo()
       }
     }
+
+    if (val === "chat") {
+
+    if (this.userLogin.role === "user") {
+      this.getChat()
+    }
+
+    if (this.userLogin.role === "admin" && this.nama) {
+      this.getChat()
+    }
+  }
   },
 
   modeChart() {
