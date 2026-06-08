@@ -506,9 +506,12 @@ td button{
   </select>
 
   <div v-for="c in chatList" :key="c.id">
-    <b>{{ c.nama }}</b>
-    ({{ c.pengirim }})
-    : {{ c.pesan }}
+    <b>
+  {{ c.pengirim === 'admin'
+      ? 'Administrator'
+      : c.nama }}
+</b>
+: {{ c.pesan }}
 
     <button class="btn-edit" style="margin-left:10px;" @click="editChat(c)">✏️</button>
     <button class="btn-hapus" style="margin-left:5px;" @click="hapusChat(c.id)">🗑️</button>
